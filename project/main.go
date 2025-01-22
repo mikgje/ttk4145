@@ -1,7 +1,10 @@
 package main
 
-import "Driver-go/elevio"
-import "fmt"
+import(
+    "Driver-go/elevio"
+    "Driver-go/elev_algo_go"
+    "fmt"
+)
 
 func main(){
 

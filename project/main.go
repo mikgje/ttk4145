@@ -1,9 +1,8 @@
 package main
 
 import(
-    "Driver-go/elevio"
-    "Driver-go/elev_algo_go/elevator"
-	"Driver-go/elev_algo_go/fsm"
+    "elevio"
+    "fsm"
     "fmt"
 )
 

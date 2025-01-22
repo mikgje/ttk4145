@@ -2,10 +2,13 @@ package fsm
 
 import (
 	"fmt"
+	"elevator"
+	"requests"
+	"timer"
 )
 
 func fsm_init() {
-	elevator = elevator_unitialized();
+	elevator = elevator.elevator_unitialized();
 }
 
 func fsm_set_all_lights(Elevator es) {
@@ -17,13 +20,13 @@ func fsm_set_all_lights(Elevator es) {
 }
 
 func  fsm_on_init_between_floors() {
-	output.Device.motorDirection(D_Down)
+	outputDevice.motorDirection(D_Down)
 	elevator.dirn = D_Down
 	elevator.behaviour = EB_Moving
 }
 
 func fsm_on_request_button_press(btn_floor int, btn_type Button) {
-	elevator_print(elevator)
+	elevaotr.elevator_print(elevator)
 
 	switch elevator.behaviour {
 	case EB_DoorOpen:

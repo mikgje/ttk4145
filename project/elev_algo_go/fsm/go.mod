@@ -10,3 +10,6 @@ replace requests => ../requests
 
 require timer v0.0.0
 replace timer => ../timer
+
+require elevio v0.0.0
+replace elevio => ../../elevio

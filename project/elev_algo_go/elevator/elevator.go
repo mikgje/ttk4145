@@ -18,7 +18,7 @@ type Button int
 type Elevator struct {
 	Floor     int
 	Dirn elevio.MotorDirection
-	Requests  [N_FLOORS][N_BUTTONS]int
+	Requests  [N_FLOORS][N_BUTTONS]bool
 	Behaviour ElevatorBehaviour
 
 	Config struct {
@@ -69,7 +69,7 @@ var cv_to_string = map[ClearRequestVariant]string{
 
 // Returns an uninitialised elevator object to be used
 // and configured in the main loop and fsm
-func elevator_uninitialised() Elevator {
+func Elevator_uninitialised() Elevator {
 	uninitialised_elevator := Elevator{
 		Floor:     -1,
 		Dirn: elevio.MD_Stop,
@@ -87,7 +87,7 @@ func elevator_uninitialised() Elevator {
 }
 
 // Prints all the stats of the elevator
-func elevator_print(elevator Elevator) {
+func Elevator_print(elevator Elevator) {
 	fmt.Println("Floor:", elevator.Floor)
 	fmt.Println("Direction:", dirn_to_string[elevator.Dirn])
 	fmt.Println("Behaviour:", eb_to_string[elevator.Behaviour])

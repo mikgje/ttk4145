@@ -108,8 +108,3 @@ func print_elevator_stats(elevator Elevator){
 	fmt.Println("Door open duration:", elevator.config.door_open_duration_s)
 	fmt.Printf("\n") // Add padding in terminal
 }
-
-func main(){
-	elevator := elevator_uninitialised()
-	print_elevator_stats(elevator)
-}

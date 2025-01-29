@@ -1,14 +1,13 @@
-package requests
+package requests_elev
 
 import (
-	"elevator"
-    "elevio"
+	"main/elev_algo_go/elevator"
+	"main/elevio"
 )
 
-type DirnBehaviourPair struct{
-    Dirn elevio.MotorDirection
-    Behaviour elevator.ElevatorBehaviour
-    
+type DirnBehaviourPair struct {
+	Dirn      elevio.MotorDirection
+	Behaviour elevator.ElevatorBehaviour
 }
 
 func requestsAbove(e elevator.Elevator) bool {
@@ -128,7 +127,7 @@ func Requests_clear_at_current_floor(e elevator.Elevator) elevator.Elevator {
 
 		switch e.Dirn {
 		case elevio.MD_Up:
-			if !requestsAbove(e) && !(e.Requests[e.Floor][elevio.BT_HallUp]){
+			if !requestsAbove(e) && !(e.Requests[e.Floor][elevio.BT_HallUp]) {
 				e.Requests[e.Floor][elevio.BT_HallDown] = false
 			}
 			e.Requests[e.Floor][elevio.BT_HallUp] = false

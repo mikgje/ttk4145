@@ -1,3 +1,0 @@
-module timer
-
-replace timer => ./

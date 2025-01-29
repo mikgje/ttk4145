@@ -2,7 +2,7 @@ package elevator
 
 import (
 	"fmt"
-	"elevio"
+	"main/elevio"
 )
 
 const (
@@ -17,7 +17,7 @@ type Button int
 
 type Elevator struct {
 	Floor     int
-	Dirn elevio.MotorDirection
+	Dirn      elevio.MotorDirection
 	Requests  [N_FLOORS][N_BUTTONS]bool
 	Behaviour ElevatorBehaviour
 
@@ -49,16 +49,16 @@ var eb_to_string = map[ElevatorBehaviour]string{
 
 // map elevator direction to strings
 var dirn_to_string = map[elevio.MotorDirection]string{
-	elevio.MD_Up: "MD_up",
+	elevio.MD_Up:   "MD_up",
 	elevio.MD_Down: "MD_down",
-	elevio.MD_Stop:   "MD_stop",
+	elevio.MD_Stop: "MD_stop",
 }
 
 // map buttons to strings
 var button_to_string = map[elevio.ButtonType]string{
-	elevio.BT_HallUp:	"B_hallUp",
+	elevio.BT_HallUp:   "B_hallUp",
 	elevio.BT_HallDown: "B_hallDown",
-	elevio.BT_Cab:	"B_cab",
+	elevio.BT_Cab:      "B_cab",
 }
 
 // map request variant to strings
@@ -72,7 +72,7 @@ var cv_to_string = map[ClearRequestVariant]string{
 func Elevator_uninitialised() Elevator {
 	uninitialised_elevator := Elevator{
 		Floor:     -1,
-		Dirn: elevio.MD_Stop,
+		Dirn:      elevio.MD_Stop,
 		Behaviour: EB_Idle,
 		Config: struct {
 			ClearRequestVariant ClearRequestVariant

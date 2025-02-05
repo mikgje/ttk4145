@@ -38,7 +38,7 @@ func Fsm_on_request_button_press(btn_floor int, btn_type elevio.ButtonType, time
 		if requests_elev.Requests_should_clear_immediately(elevator_cab, btn_floor, btn_type) {
 			go timer.Timer_start2(elevator_cab.Config.DoorOpenDuration_s, timer_channel)
 		} else {
-			elevator_cab = requests_elev.Requests_clear_at_current_floor(elevator_cab)
+			elevator_cab.Requests[btn_floor][btn_type] = true
 		}
 		break
 
@@ -104,6 +104,8 @@ func Fsm_on_floor_arrival(new_floor int, timer_channel chan<- bool) {
 
 func Fsm_on_door_timeout(timer_channel chan<- bool) {
 	elevator.Elevator_print(elevator_cab)
+
+	elevio.SetDoorOpenLamp(false) // for å cleare lampen ved timeout
 
 	switch elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:

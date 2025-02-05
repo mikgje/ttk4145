@@ -26,12 +26,13 @@ func main() {
 	floor_channel := make(chan int)
 	button_channel := make(chan elevio.ButtonEvent)
 	obstruction_channel := make(chan bool)
+	
+	go elevio.PollButtons(button_channel)
+	go elevio.PollFloorSensor(floor_channel)
+	go elevio.PollObstructionSwitch(obstruction_channel)
 
 	for {
 
-		go elevio.PollButtons(button_channel)
-		go elevio.PollFloorSensor(floor_channel)
-		go elevio.PollObstructionSwitch(obstruction_channel)
 
 		
 		select {
@@ -47,7 +48,7 @@ func main() {
 			fsm.Fsm_on_door_timeout()
 		}
 
-		time.Sleep(time.Second)
+		// time.Sleep(time.Second)
 	}
 
 	//     drv_buttons := make(chan elevio.ButtonEvent)

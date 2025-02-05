@@ -1,7 +1,7 @@
 package main
 
 import (
-	"main/elev_algo_go/elevator"
+	// "main/elev_algo_go/elevator"
 	"main/elev_algo_go/fsm"
 	"main/elev_algo_go/timer"
 	"main/elevio"
@@ -14,6 +14,7 @@ func main() {
 	numFloors := 4
 
 	elevio.Init("localhost:15657", numFloors)
+	fsm.Fsm_init()
 
 	// var d elevio.MotorDirection = elevio.MD_Up
 	//elevio.SetMotorDirection(d)
@@ -22,36 +23,28 @@ func main() {
 		fsm.Fsm_on_init_between_floors()
 	}
 
-	var prev [elevator.N_FLOORS][elevator.N_BUTTONS]bool
-	prev_const := -1
+	floor_channel := make(chan int)
+	button_channel := make(chan elevio.ButtonEvent)
+	obstruction_channel := make(chan bool)
 
 	for {
-		{
-			for f := 0; f < elevator.N_FLOORS; f++ {
-				for i := 0; i < elevator.N_BUTTONS; i++ {
-					b := elevio.ButtonType(i)
-					v := elevio.GetButton(b, f)
-					if v && (v != prev[f][i]) {
-						fsm.Fsm_on_request_button_press(f, b)
-					}
-					prev[f][b] = v
-				}
-			}
+
+		go elevio.PollButtons(button_channel)
+		go elevio.PollFloorSensor(floor_channel)
+		go elevio.PollObstructionSwitch(obstruction_channel)
+
+		
+		select {
+		case button := <- button_channel:
+			fsm.Fsm_on_request_button_press(button.Floor, button.Button)
+		case floor := <- floor_channel:
+			fsm.Fsm_on_floor_arrival(floor)
+		// case obstruction := <- obstruction_channel:
 		}
 
-		{
-			f := elevio.GetFloor()
-			if (f != -1) && (f != prev_const) {
-				fsm.Fsm_on_floor_arrival(f)
-			}
-			prev_const = f
-		}
-
-		{
-			if timer.Timer_timed_out() == 1 {
-				timer.Timer_stop()
-				fsm.Fsm_on_door_timeout()
-			}
+		if timer.Timer_timed_out() == 1{
+			timer.Timer_stop()
+			fsm.Fsm_on_door_timeout()
 		}
 
 		time.Sleep(time.Second)

@@ -5,7 +5,7 @@ import (
 	"main/elev_algo_go/fsm"
 	"main/elev_algo_go/timer"
 	"main/elevio"
-	"time"
+	// "time"
 	// "fmt"
 )
 
@@ -26,6 +26,7 @@ func main() {
 	floor_channel := make(chan int)
 	button_channel := make(chan elevio.ButtonEvent)
 	obstruction_channel := make(chan bool)
+	timer_channel := make(chan bool)
 	
 	go elevio.PollButtons(button_channel)
 	go elevio.PollFloorSensor(floor_channel)
@@ -37,16 +38,17 @@ func main() {
 		
 		select {
 		case button := <- button_channel:
-			fsm.Fsm_on_request_button_press(button.Floor, button.Button)
+			fsm.Fsm_on_request_button_press(button.Floor, button.Button, timer_channel)
 		case floor := <- floor_channel:
-			fsm.Fsm_on_floor_arrival(floor)
-		// case obstruction := <- obstruction_channel:
+			fsm.Fsm_on_floor_arrival(floor, timer_channel)
+		case <- timer_channel:
+			fsm.Fsm_on_door_timeout(timer_channel)
 		}
 
-		if timer.Timer_timed_out() == 1{
-			timer.Timer_stop()
-			fsm.Fsm_on_door_timeout()
-		}
+		// if timer.Timer_timed_out() == 1{
+		// 	timer.Timer_stop()
+		// 	fsm.Fsm_on_door_timeout(timer_channel)
+		// }
 
 		// time.Sleep(time.Second)
 	}

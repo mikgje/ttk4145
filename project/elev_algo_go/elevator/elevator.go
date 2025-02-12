@@ -120,7 +120,6 @@ func Elevator_print(elevator Elevator) {
 		}
 		fmt.Println()
 	}
-	fmt.Printf("\n") // Add padding in terminal
 }
 
 func splitLines(s string) []string {

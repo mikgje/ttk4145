@@ -120,6 +120,7 @@ func Fsm_on_door_timeout(timer_channel chan<- bool) {
 			Fsm_set_all_lights(elevator_cab)
 			break
 		case elevator.EB_Moving:
+			elevio.SetMotorDirection(elevator_cab.Dirn)
 			break
 		case elevator.EB_Idle:
 			// outputDevice.doorLight(0)

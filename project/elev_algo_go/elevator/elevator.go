@@ -78,7 +78,7 @@ func Elevator_uninitialised() Elevator {
 			ClearRequestVariant ClearRequestVariant
 			DoorOpenDuration_s  float64
 		}{
-			ClearRequestVariant: CV_All,
+			ClearRequestVariant: CV_InDirn,
 			DoorOpenDuration_s:  3.0,
 		},
 	}

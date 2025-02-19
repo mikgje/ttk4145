@@ -89,38 +89,39 @@ func Elevator_uninitialised() Elevator {
 
 // Prints all the stats of the elevator
 func Elevator_print(elevator Elevator) {
-	stats := fmt.Sprintf("Floor: %d\nDirection: %s\nBehaviour: %s\nClear request variant: %s\nDoor open duration: %.1f\n",
-		elevator.Floor, dirn_to_string[elevator.Dirn], eb_to_string[elevator.Behaviour], cv_to_string[elevator.Config.ClearRequestVariant], elevator.Config.DoorOpenDuration_s)
+    stats := fmt.Sprintf("Floor: %d\nDirection: %s\nBehaviour: %s\nClear request variant: %s\nDoor open duration: %.1f\n",
+        elevator.Floor, dirn_to_string[elevator.Dirn], eb_to_string[elevator.Behaviour], cv_to_string[elevator.Config.ClearRequestVariant], elevator.Config.DoorOpenDuration_s)
 
-	requests := "Requests:\n"
-	for floor := 0; floor < N_FLOORS; floor++ {
-		requests += fmt.Sprintf("  Floor %d: [", floor)
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			if elevator.Requests[floor][btn] {
-				requests += fmt.Sprintf(" %s ", Button_to_string[elevio.ButtonType(btn)])
-			} else {
-				requests += " - "
-			}
-		}
-		requests += "]\n"
-	}
+    requests := "Requests:\n"
+    for floor := 0; floor < N_FLOORS; floor++ {
+        requests += fmt.Sprintf("  Floor %d: [", floor)
+        for btn := 0; btn < N_BUTTONS; btn++ {
+            if elevator.Requests[floor][btn] {
+                requests += fmt.Sprintf(" %s ", Button_to_string[elevio.ButtonType(btn)])
+            } else {
+                requests += " - "
+            }
+        }
+        requests += "]\n"
+    }
 
-	statsLines := splitLines(stats)
-	requestsLines := splitLines(requests)
+    statsLines := splitLines(stats)
+    requestsLines := splitLines(requests)
 
-	maxLines := max(len(statsLines), len(requestsLines))
+    maxLines := max(len(statsLines), len(requestsLines))
 
-	for i := 0; i < maxLines; i++ {
-		if i < len(statsLines) {
-			fmt.Print(statsLines[i])
-		}
-		fmt.Print("\t\t")
-		if i < len(requestsLines) {
-			fmt.Print(requestsLines[i])
-		}
-		fmt.Println()
-	}
-	fmt.Print("\n")
+    for i := 0; i < maxLines; i++ {
+        if i < len(statsLines) {
+            fmt.Printf("%-40s", statsLines[i])
+        } else {
+            fmt.Printf("%-40s", "")
+        }
+        if i < len(requestsLines) {
+            fmt.Print(requestsLines[i])
+        }
+        fmt.Println()
+    }
+    fmt.Print("\n")
 }
 
 func splitLines(s string) []string {

@@ -53,7 +53,7 @@ func main_elevator() {
 			is_elevator_obstructed = obstruction
 			if obstruction {
 				fmt.Println("Obstruction detected, starting timer")
-				go timer.Obstruction_timer(obstruction_timer_channel, abort_timer_channel) //Start watchdog for obstruction switch
+				go timer.Obstruction_timer(obstruction_timer_duration, obstruction_timer_channel, abort_timer_channel) //Start watchdog for obstruction switch
 			} else {
 				if !healthy { //Check if unhealthy and handle this only to prevent blocking in abort_timer_channel
 					healthy = true

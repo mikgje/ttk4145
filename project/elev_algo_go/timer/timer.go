@@ -6,7 +6,6 @@ import (
 
 var timer_end_time time.Time
 var timer_active int
-var obstruction_timeout int = 30
 
 // Assuming duration is in seconds
 func Timer_start(duration float64) {
@@ -40,9 +39,9 @@ func Timer_start2(duration float64, channel chan<- bool) {
 	println("Timer fired")
 }
 
-func Obstruction_timer(channel chan<- bool, abort chan bool) {
+func Obstruction_timer(duration int, channel chan<- bool, abort chan bool) {
 	running := true
-	obstruction_timer := time.NewTimer(time.Duration(obstruction_timeout) * time.Second)
+	obstruction_timer := time.NewTimer(time.Duration(duration) * time.Second)
 	for running {
 		select {
 		case <-obstruction_timer.C:

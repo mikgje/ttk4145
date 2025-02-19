@@ -135,8 +135,9 @@ func spawnBackup(lastCount int) {
         cmd = exec.Command("osascript", "-e", fmt.Sprintf(
             `tell app "Terminal" to do script "cd %s && ./test -role=backup -start=%d"`, exePath, lastCount))
     } else if runtime.GOOS == "linux" { // Linux
-        cmd = exec.Command("gnome-terminal", "--", "bash", "-c", fmt.Sprintf(
-            "cd %s && ./test -role=backup -start=%d", exePath, lastCount))
+		exePath, err = os.Getwd()
+//        cmd = exec.Command("kgx", "--", "bash", "-c", "cd ", exePath, "&& ./test -role=backup")
+		cmd = exec.Command("kgx", "-c", fmt.Sprintf("kgx ./test -role=backup"), exePath)
     } else {
         fmt.Println("Unsupported OS")
         return

@@ -3,11 +3,13 @@ package main
 
 import (
 	"fmt"
+	"main/elevio"
 )
 
+
 var(
-	elev_to_ctrl_chan = make(chan string)
-	ctrl_to_elev_chan = make(chan string)
+	elev_to_ctrl_chan = make(chan elevio.ButtonEvent)
+	ctrl_to_elev_chan = make(chan elevio.ButtonEvent)
 )
 
 
@@ -17,5 +19,6 @@ func main(){
 
 	go main_controller()
 	go main_elevator()
+	for {}
 
 }

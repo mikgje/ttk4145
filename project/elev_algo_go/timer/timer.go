@@ -4,12 +4,13 @@ import (
 	"time"
 )
 
-var timer_end_time time.Time;
-var timer_active int;
+var timer_end_time time.Time
+var timer_active int
+var obstruction_timeout int = 30
 
 // Assuming duration is in seconds
 func Timer_start(duration float64) {
-	timer_end_time = time.Now().Add(time.Duration(duration*1000000000))
+	timer_end_time = time.Now().Add(time.Duration(duration * 1000000000))
 	timer_active = 1
 }
 
@@ -29,12 +30,30 @@ func Timer_timed_out() int {
 	}
 }
 
-
-func Timer_start2(duration float64, channel chan<- bool){
+// This is the timer used at the momement
+func Timer_start2(duration float64, channel chan<- bool) {
 	timer := time.NewTimer(time.Duration(duration) * time.Second)
-	<- timer.C
+	println("Waiting for timer to fire")
+	<-timer.C
 	channel <- true
 
 	println("Timer fired")
+}
 
+func Obstruction_timer(channel chan<- bool, abort chan bool) {
+	running := true
+	obstruction_timer := time.NewTimer(time.Duration(obstruction_timeout) * time.Second)
+	for running {
+		select {
+		case <-obstruction_timer.C:
+			channel <- true
+			running = false
+			println("Obstruction timer fired")
+		case <-abort:
+			obstruction_timer.Stop()
+			running = false
+			println("Obstruction timer aborted")
+		}
+	}
+	println("leaving obstruction timer")
 }

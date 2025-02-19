@@ -56,7 +56,7 @@ var dirn_to_string = map[elevio.MotorDirection]string{
 }
 
 // map buttons to strings
-var button_to_string = map[elevio.ButtonType]string{
+var Button_to_string = map[elevio.ButtonType]string{
 	elevio.BT_HallUp:   "B_hallUp",
 	elevio.BT_HallDown: "B_hallDown",
 	elevio.BT_Cab:      "B_cab",
@@ -97,7 +97,7 @@ func Elevator_print(elevator Elevator) {
 		requests += fmt.Sprintf("  Floor %d: [", floor)
 		for btn := 0; btn < N_BUTTONS; btn++ {
 			if elevator.Requests[floor][btn] {
-				requests += fmt.Sprintf(" %s ", button_to_string[elevio.ButtonType(btn)])
+				requests += fmt.Sprintf(" %s ", Button_to_string[elevio.ButtonType(btn)])
 			} else {
 				requests += " - "
 			}
@@ -120,6 +120,7 @@ func Elevator_print(elevator Elevator) {
 		}
 		fmt.Println()
 	}
+	fmt.Print("\n")
 }
 
 func splitLines(s string) []string {

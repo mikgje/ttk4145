@@ -25,7 +25,7 @@ type Elevator struct {
 	Config struct {
 		ClearRequestVariant ClearRequestVariant
 		DoorOpenDuration_s  float64
-	}
+	}	
 }
 
 // Enum for clear request variant

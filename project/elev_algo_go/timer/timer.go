@@ -30,22 +30,22 @@ func Timer_timed_out() int {
 }
 
 // This is the timer used at the momement
-func Timer_start2(duration float64, channel chan<- bool) {
+func Timer_start2(duration float64, trigger_channel chan<- bool) {
 	timer := time.NewTimer(time.Duration(duration) * time.Second)
 	println("Waiting for timer to fire")
 	<-timer.C
-	channel <- true
+	trigger_channel <- true
 
 	println("Timer fired")
 }
 
-func Obstruction_timer(duration int, channel chan<- bool, abort chan bool) {
+func Obstruction_timer(duration int, trigger_channel chan<- bool, abort chan bool) {
 	running := true
 	obstruction_timer := time.NewTimer(time.Duration(duration) * time.Second)
 	for running {
 		select {
 		case <-obstruction_timer.C:
-			channel <- true
+			trigger_channel <- true
 			running = false
 			println("Obstruction timer fired")
 		case <-abort:

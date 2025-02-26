@@ -14,6 +14,8 @@ var (
 	obstruction_timer_duration int
 )
 
+
+
 func main() {
 	debug := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()

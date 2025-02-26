@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func main() {
+func main_network() {
 	if len(os.Args) < 2 {
 		fmt.Println("Please specify a local port and a remote port")
 		return

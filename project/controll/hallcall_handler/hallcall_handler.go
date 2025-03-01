@@ -15,11 +15,15 @@ func AssignHallRequests(input map[string]interface{}) (map[string]interface{}, e
 		return nil, fmt.Errorf("error marshalling input JSON: %v", err)
 	}
 
+
+
 	// Debugging: Print JSON input
 	fmt.Println("Sending to hall_request_assigner:", string(inputJSON))
 
-	// Execute hall_request_assigner with `-i` argument
-	cmd := exec.Command("./hall_request_assigner", "-i", string(inputJSON)) // ✅ Fix: Pass JSON as argument
+
+	
+	// lager cmd
+	cmd := exec.Command("./hall_request_assigner", "-i", string(inputJSON))
 
 	// Capture output
 	var outputBuffer bytes.Buffer
@@ -46,9 +50,3 @@ func AssignHallRequests(input map[string]interface{}) (map[string]interface{}, e
 
 	return output, nil
 }
-
-// The AssignHallRequests function prepares the JSON input, runs the hall_request_assigner executable, and returns the updated hall request assignments.
-
-//this code is used to run the hall_request_assigner executable, what it does is that it takes the input map
-// and converts it to a JSON format, then it runs the hall_request_assigner executable 
-// and passes the JSON input to it. The output of the executable is captured and parsed to a map and returned.

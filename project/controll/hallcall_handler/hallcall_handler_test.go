@@ -1,15 +1,16 @@
-package hallcall_handler  // vi brukre ikke main fordi vi ikke skal kjøre dette programmet, vi skal bare teste det.
-// main brukes i det tilfellet at vi skal
+package hallcall_handler // vi brukre ikke main fordi vi ikke skal kjøre dette programmet, vi skal bare teste det.
+
 
 import (
+	"fmt"
 	"testing"
 )
 
 
 
 
-func TestAssignHallRequests(t *testing.T) {  //denn inputen brukes ikke i funksjonen, men er hva som faktisk skal brukes, 
-	input := map[string]interface{}{ // algoritmen ser ut til å kunne ta inn ubregrenset antall heiser 
+func TestAssignHallRequests(t *testing.T) {   
+	input := map[string]interface{}{ 
 		"hallRequests": [][]bool{
 			{false, false},
 			{true, false},
@@ -38,10 +39,11 @@ func TestAssignHallRequests(t *testing.T) {  //denn inputen brukes ikke i funksj
 		},
 	}
 
-	output, err := AssignHallRequests(input)  // her sakl det egentlig være t, eller en variabl som arstein larger, og mikeal sender. 
+	output, err := AssignHallRequests(input)  
 	if err != nil {
 		t.Fatalf("AssignHallRequests failed: %v", err)
 	}
 
-	t.Logf("Output: %v", output)  // ✅ Logs output
+	t.Logf("Output: %v", output) 
+	fmt.Printf("done")
 }

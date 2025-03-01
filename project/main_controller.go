@@ -11,13 +11,13 @@ import (
 )
 
 type State int
-// type StatusMessage struct {
-// 	controller_id int
-// 	behaviour string
-// 	floor int
-// 	direction string
-// 	node_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool
-// }
+type StatusMessage struct {
+	controller_id int
+	behaviour string
+	floor int
+	direction string
+	node_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool
+}
 
 type OrderDistributionMessage struct{
 	orderline0 struct{

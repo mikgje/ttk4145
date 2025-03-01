@@ -1,26 +1,43 @@
 package main
 
 import (
-	// "main/elev_algo_go/elevator"
 	"main/elev_algo_go/fsm"
 	"main/elev_algo_go/timer"
 	"main/elevio"
-
-	// "time"
 	"fmt"
 )
 
-var healthy bool = true
+//All required variables and channels are declared here
 
-const UNHEALTHY_FLAG int = -1
-const HEALTHY_FLAG int = 100
+var(
+	numFloors = 4
+	is_elevator_obstructed = false //Internal flag to keep track of the elevator's obstruction status
+	healthy bool = true //Internal flag to keep track of the elevator's health
 
-func main_elevator() {
+	floor_channel = make(chan int)
+	button_channel = make(chan elevio.ButtonEvent)
+	obstruction_channel = make(chan bool)
+	timer_channel = make(chan bool)
+	obstruction_timer_channel = make(chan bool)
+	abort_timer_channel = make(chan bool)
+)
 
-	// elevio.SetStopLamp(false)
-	numFloors := 4
+const(
+	UNHEALTHY_FLAG int = -1
+	HEALTHY_FLAG int = 100
+) 
 
-	is_elevator_obstructed := false
+
+/*
+This file contains all the logic of running the elevator itself, and sending/recieving messages to/from the controller.
+All requirements to this file can be considered functional (baseline), and is not relevant to the architecture.
+*/
+
+
+func main_elevator() { 
+
+
+	// INTIALIZATION
 
 	elevio.Init("localhost:15657", numFloors)
 	fsm.Fsm_init()
@@ -29,37 +46,33 @@ func main_elevator() {
 		fsm.Fsm_on_init_between_floors()
 	}
 
-	floor_channel := make(chan int)
-	button_channel := make(chan elevio.ButtonEvent)
-	obstruction_channel := make(chan bool)
-	timer_channel := make(chan bool)
-	obstruction_timer_channel := make(chan bool)
-	abort_timer_channel := make(chan bool)
-
 	go elevio.PollButtons(button_channel)
 	go elevio.PollFloorSensor(floor_channel)
 	go elevio.PollObstructionSwitch(obstruction_channel)
 
+	// INTIALIZATION END
+
 	for {
 		select {
-		case button := <-button_channel:
+		case button := <-button_channel: //On button press send the event to the controller to be handled
 			elev_to_ctrl_chan <- button
-			// fsm.Fsm_on_request_button_press(button.Floor, button.Button, timer_channel)
 
-		case floor := <-floor_channel:
+		case floor := <-floor_channel:  //On arrival at the floor update lights, orders and choose direction
 			fsm.Fsm_on_floor_arrival(floor, timer_channel)
 
-		case obstruction := <-obstruction_channel:
-			is_elevator_obstructed = obstruction
+		case obstruction := <-obstruction_channel: //This case handles the obstruction switch
+			is_elevator_obstructed = obstruction //Set the internal flag to the state of the obstruction switch
 			if obstruction {
 				fmt.Println("Obstruction detected, starting timer")
 				go timer.Obstruction_timer(obstruction_timer_duration, obstruction_timer_channel, abort_timer_channel) //Start watchdog for obstruction switch
 			} else {
-				if !healthy { //Check if unhealthy and handle this only to prevent blocking in abort_timer_channel
+
+				if !healthy { //If obstruction is removed and the elevator is unhealthy, set healthy and send message to controller with updated status
 					healthy = true
 					elevio.SetStopLamp(false)
 					elev_to_ctrl_chan <- elevio.ButtonEvent{Floor: HEALTHY_FLAG, Button: elevio.BT_Cab}
-				} else {
+
+				} else { //If obstruction is removed and the elevator is not unhealthy, stop timer and continue as normal.
 					fmt.Println("Obstruction removed, stopping timer")
 					abort_timer_channel <- false
 				}
@@ -70,16 +83,15 @@ func main_elevator() {
 			elevio.SetStopLamp(true)
 			elev_to_ctrl_chan <- elevio.ButtonEvent{Floor: UNHEALTHY_FLAG, Button: elevio.BT_Cab}
 
-		case <-timer_channel:
-			// fmt.Println("Status: ", is_elevator_healthy)
+		case <-timer_channel: //The door timer has fired, the elevator will check if there are any orders to handle
+							  //If the elevator is obstructed it will start a new timer, otherwise it will close the door and continue
 			if !(is_elevator_obstructed) {
 				fsm.Fsm_on_door_timeout(timer_channel)
 			} else {
-				// fmt.Println("Starting timer again")
 				go timer.Timer_start2(3, timer_channel)
 			}
 
-		case msg := <-ctrl_to_elev_chan:
+		case msg := <-ctrl_to_elev_chan: //When controller has new orders it sends them via this channel and the elevator will handle them
 			fsm.Fsm_on_request_button_press(msg.Floor, msg.Button, timer_channel)
 
 		}

@@ -11,13 +11,10 @@ import (
 )
 
 type State int
-// type StatusMessage struct {
-// 	controller_id int
-// 	behaviour string
-// 	floor int
-// 	direction string
-// 	node_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool
-// }
+/*
+Here a datatype called StatusMessage will be defined, but is not yet implemented.
+This datatype will be used to send messages to the network module.
+*/
 
 type OrderDistributionMessage struct{
 	orderline0 struct{
@@ -55,6 +52,8 @@ const (
 
 // }
 
+
+// Extracts the correct order line from the masters order list based on controller id
 func extract_orderline(orderlines OrderDistributionMessage) [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool {
 	switch controller_id{
 	case 0:
@@ -68,6 +67,7 @@ func extract_orderline(orderlines OrderDistributionMessage) [elevator.N_FLOORS][
 	}
 }
 
+// This is a temporary test function to simulate recieving orders over the network.
 func TEMP_receive_network(network_receive_chan chan<- OrderDistributionMessage){
 	fmt.Println("Starting network receive function")
 	var new_order_list = OrderDistributionMessage{
@@ -115,6 +115,13 @@ func TEMP_receive_network(network_receive_chan chan<- OrderDistributionMessage){
 	}
 }
 
+/*
+The functions below this comment are used to realise the controller logic and operation.
+The controller has several different states to operate in, where each state has a slightly different behaviour.
+*/
+
+
+//Function to run the controller state machine and network modules
 func main_controller() {
 	/* Placeholder for network routines */
 	// go TEMP_transmit_network(network_send_chan)
@@ -127,6 +134,7 @@ func main_controller() {
 	
 }
 
+//Function to run the controller state machine
 func controller_state_machine(state State) {
 	switch state {
 	case state_normal:
@@ -140,7 +148,14 @@ func controller_state_machine(state State) {
 	}
 }
 
+
 func normal_controller() {
+
+	/*
+	In this state the controller works purely as a slave and is not concerned with the status of the other nodes.
+	It will send status messages and recieve order messages.
+	*/
+
 	for {
 		select {
 		case msg := <-elev_to_ctrl_chan:
@@ -195,18 +210,35 @@ func normal_controller() {
 }
 
 func backup_controller() {
-	//Running same loop as normal mode
-	//
+	/*
+	This state allows the controller to both work as a normal slave on the network, while monitoring the status of the primary controller.
+	If the controller detects that the primary controller is not functioning, it will take over as the primary controller.
+	*/
 }
 
-func primary_controller() {}
+func primary_controller() {
+	/*
+	This state allows the controller to work as the primary controller on the network.
+	The primary controller is responsible for distributing orders to the other controllers on the network.
+	When starting up as primary, the controller will choose its backup controller.
+	*/
+
+}
 
 func disconnected_controller() {
+	/*
+	The controller will go to this state when it detects it has lost connection to the network.
+	In this state the controller will try to reconnect to the network.
+	While disconnected, the elevator will only serve cab calls and ignore hall calls from its panel.
+	*/
+
+
 	for {
 		select {
 		case msg := <-elev_to_ctrl_chan:
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
+			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
 			fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
 
 			if new_order_floor == UNHEALTHY_FLAG { //This funcitonality is here to stay, ish.
@@ -217,13 +249,11 @@ func disconnected_controller() {
 				fmt.Println("Elevator is healthy")
 				is_elevator_healthy = true
 
-			} else { //This is temporary, and will be replaced by network communication
+			} else if new_order_button == elevio.BT_Cab {
 				if !is_elevator_healthy {
-					fmt.Println("Elevator is not healthy, not sending order")
+					fmt.Println("Elevator is unhealthy, not sending order")
 					break
-				}				
-				new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
-				fmt.Println("Sending order to elevator")
+				}	
 				ctrl_to_elev_chan <- new_order
 			}
 		default:

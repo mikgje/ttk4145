@@ -182,10 +182,6 @@ func normal_controller() {
 				ctrl_to_elev_chan <- new_order
 
 			// } else { //Sending to network
-			// 	if !is_elevator_healthy {
-			// 		fmt.Println("Elevator is unhealthy, not sending order")
-			// 		break
-			// 	}
 			// 	/* BELOW THIS LINE IS NOT WORKING, TEMPORARY PLACEHOLDER */
 			// 	augmented_requests = augment_request_array(elevator_service_orders, new_order);	
 			// 	status_message := StatusMessage{controller_id: 0, behaviour: "normal", floor: 2, direction: "up", node_orders: augmented_requests}
@@ -193,7 +189,7 @@ func normal_controller() {
 			// 	ctrl_to_elev_chan <- new_order
 			// 	/* END OF PLACEHOLDER */
 			}
-		case msg := <-network_receive_order_chan:
+		case msg := <-network_receive_order_chan: //Recieve new orders from network and sending them to elevator in sequence.
 			new_orders := extract_orderline(msg)
 			fmt.Println("Received new orders from network")
 			for floor := 0; floor < elevator.N_FLOORS; floor++ {

@@ -5,6 +5,7 @@ import (
 )
 
 type StatusMessage struct {
+	Label string
 	Controller_id int
 	Behaviour     string
 	Floor         int
@@ -13,5 +14,6 @@ type StatusMessage struct {
 }
 
 type OrderDistributionMessage struct {
-	New_hall_orders [3][elevator.N_FLOORS][elevator.N_BUTTONS - 1]bool
+	Label string
+	Orderlines [3][elevator.N_FLOORS][elevator.N_BUTTONS - 1]bool
 }

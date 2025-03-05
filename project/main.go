@@ -6,18 +6,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"main/elev_algo_go/elevator"
 	"main/elevio"
 )
 
 
 // Global variables
 var (
-	elev_to_ctrl_chan          = make(chan elevio.ButtonEvent)
+	elev_to_ctrl_button_chan          = make(chan elevio.ButtonEvent)
+	elev_to_ctrl_chan                 = make(chan elevator.Elevator)
 	ctrl_to_elev_chan          = make(chan elevio.ButtonEvent)
 	obstruction_timer_duration int
 )
-
-
 
 func main() {
 	debug := flag.Bool("debug", false, "Enable debug mode") // Command line flag to enable debug mode

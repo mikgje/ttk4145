@@ -60,6 +60,7 @@ func main_elevator() {
 
 		case floor := <-floor_channel:  //On arrival at the floor update lights, orders and choose direction
 			fsm.Fsm_on_floor_arrival(floor, timer_channel)
+			elev_to_ctrl_chan <- fsm.Elevator_cab
 
 		case obstruction := <-obstruction_channel: //This case handles the obstruction switch
 			is_elevator_obstructed = obstruction //Set the internal flag to the state of the obstruction switch
@@ -82,7 +83,7 @@ func main_elevator() {
 		case <-obstruction_timer_channel: //The obstruction timer has fired, the elevator is inoperable and communicates this to the controller
 			healthy = false
 			elevio.SetStopLamp(true)
-			elev_to_ctrl_chan <- elevio.ButtonEvent{Floor: UNHEALTHY_FLAG, Button: elevio.BT_Cab}
+			elev_to_ctrl_button_chan <- elevio.ButtonEvent{Floor: UNHEALTHY_FLAG, Button: elevio.BT_Cab}
 
 		case <-timer_channel: //The door timer has fired, the elevator will check if there are any orders to handle
 							  //If the elevator is obstructed it will start a new timer, otherwise it will close the door and continue

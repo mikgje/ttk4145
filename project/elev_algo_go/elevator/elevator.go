@@ -42,14 +42,14 @@ const (
 )
 
 // map elevator behaviour to strings for printing
-var eb_to_string = map[ElevatorBehaviour]string{
+var EB_to_string = map[ElevatorBehaviour]string{
 	EB_Idle:     "EB_idle",
 	EB_DoorOpen: "EB_doorOpen",
 	EB_Moving:   "EB_moving",
 }
 
 // map elevator direction to strings
-var dirn_to_string = map[elevio.MotorDirection]string{
+var Dirn_to_string = map[elevio.MotorDirection]string{
 	elevio.MD_Up:   "MD_up",
 	elevio.MD_Down: "MD_down",
 	elevio.MD_Stop: "MD_stop",
@@ -63,7 +63,7 @@ var Button_to_string = map[elevio.ButtonType]string{
 }
 
 // map request variant to strings
-var cv_to_string = map[ClearRequestVariant]string{
+var CV_to_string = map[ClearRequestVariant]string{
 	CV_All:    "CV_all",
 	CV_InDirn: "CV_inDirn",
 }
@@ -90,7 +90,7 @@ func Elevator_uninitialised() Elevator {
 // Prints all the stats of the elevator
 func Elevator_print(elevator Elevator) {
     stats := fmt.Sprintf("Floor: %d\nDirection: %s\nBehaviour: %s\nClear request variant: %s\nDoor open duration: %.1f\n",
-        elevator.Floor, dirn_to_string[elevator.Dirn], eb_to_string[elevator.Behaviour], cv_to_string[elevator.Config.ClearRequestVariant], elevator.Config.DoorOpenDuration_s)
+        elevator.Floor, Dirn_to_string[elevator.Dirn], EB_to_string[elevator.Behaviour], CV_to_string[elevator.Config.ClearRequestVariant], elevator.Config.DoorOpenDuration_s)
 
     requests := "Requests:\n"
     for floor := 0; floor < N_FLOORS; floor++ {

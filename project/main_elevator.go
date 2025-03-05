@@ -60,7 +60,7 @@ func main_elevator() {
 
 		case floor := <-floor_channel:  //On arrival at the floor update lights, orders and choose direction
 			fsm.Fsm_on_floor_arrival(floor, timer_channel)
-			elev_to_ctrl_chan <- fsm.Elevator_cab
+			elev_to_ctrl_chan <- fsm.Elevator_cab //Send updated elevator status to controller
 
 		case obstruction := <-obstruction_channel: //This case handles the obstruction switch
 			is_elevator_obstructed = obstruction //Set the internal flag to the state of the obstruction switch

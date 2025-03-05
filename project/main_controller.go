@@ -34,6 +34,7 @@ const (
 	state_disconnected
 )
 
+// augment_request_array adds a new order to the current request array to be transmitted to master for distribution.
 func augment_request_array(elevator_service_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool, new_order elevio.ButtonEvent) [elevator.N_FLOORS][elevator.N_BUTTONS]bool {
 	augmented_requests := elevator_service_orders
 	augmented_requests[new_order.Floor][new_order.Button] = true

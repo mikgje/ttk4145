@@ -1,6 +1,8 @@
 Elevator software
 ===========================
 
+(See attached figures to get a graphical representation of what is presented here)
+
 The elevator software to run on a single computer is comprised of three main modules (outside the main function used to call them and run the program): main_elevator, main_controller and network.
 
 main_elevator and main_controller are part of the main package to allow for swift sharing of constants and flags. Variables are shared using message passing over channels.

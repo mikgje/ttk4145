@@ -5,11 +5,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"main/elev_algo_go/elevator"
 	"main/elevio"
 )
 
 var (
-	elev_to_ctrl_chan          = make(chan elevio.ButtonEvent)
+	elev_to_ctrl_button_chan          = make(chan elevio.ButtonEvent)
+	elev_to_ctrl_chan                 = make(chan elevator.Elevator)
 	ctrl_to_elev_chan          = make(chan elevio.ButtonEvent)
 	obstruction_timer_duration int
 )

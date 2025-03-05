@@ -1,4 +1,5 @@
-package network_master
+//package network_master
+package main
 
 import (
 	"Network-go/network/bcast"
@@ -12,11 +13,42 @@ import (
 	"time"
 )
 
+// Node message used by the master containing the distribution message
 type Node_msg struct {
-	dist_msg utilities.OrderDistributionMessage
+	Dist_msg utilities.OrderDistributionMessage
 }
 
-func network_master(assign_chan chan->OrderDistributionMessage, master_chan chan<-OrderDistributionMessage) {
+// For testing purposes
+func main() {
+	// Make two channels, one called assign_chan to receive the orders to distribute, received from the hall assigner. The other channel, master_chan, is used by the master to send these orders to the slaves (including itself).
+	assign_chan := make(chan utilities.OrderDistributionMessage)
+	master_chan := make(chan utilities.OrderDistributionMessage)
+
+	go network_master(assign_chan, master_chan)
+	for {
+	
+		assign_chan <- utilities.OrderDistributionMessage{Label : "Ø", Orderlines : [3][elevator.N_FLOORS][elevator.N_BUTTONS-1]bool{
+			{	{true,false},
+				{false,true},
+				{true,true},
+				{false,false},
+			},
+			{	{true,false},
+				{false,true},
+				{true,true},
+				{false,false},
+			},
+			{	{true,false},
+				{false,true},
+				{true,true},
+				{false,false},
+			},
+		}	}
+	
+	}
+}
+
+func network_master(assign_chan <-chan utilities.OrderDistributionMessage, master_chan chan<- utilities.OrderDistributionMessage) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -40,37 +72,16 @@ func network_master(assign_chan chan->OrderDistributionMessage, master_chan chan
 	go bcast.Transmitter(16569, node_tx)
 	go bcast.Receiver(16569, node_rx)
 
+	node_msg := Node_msg{}
+
 	go func() {
-		// TODO: implement channel logic to receive orders to be distributed from cost function
-		node_msg := Node_msg{
-			utilities.OrderDistributionMessage{
-				"D",
-				[3][elevator.N_FLOORS][elevator.N_BUTTONS-1]bool{
-					//orderline0
-					{
-						{true, false},
-						{false, true},
-						{true, true},
-						{false, false},
-					},
-					//orderline1
-					{
-						{true, false},
-						{false, true},
-						{true, true},
-						{false, false},
-					},
-					//orderline2
-					{
-						{true, false},
-						{false, true},
-						{true, true},
-						{false, false},
-					},
-				},
-			},
-		}
 		for {
+		select {
+		// Update the distribution if the hall assigner sends an updated list
+		case assign := <-assign_chan:
+			node_msg.Dist_msg = assign
+		default:
+		}
 			node_tx <- node_msg
 			time.Sleep(1 * time.Second)
 		}
@@ -87,8 +98,7 @@ func network_master(assign_chan chan->OrderDistributionMessage, master_chan chan
 
 		case a := <- node_rx:
 			fmt.Printf("Received: %v\n", a)
-//			fmt.Printf("\nIndex: %v\n", a.dist_msg.Orderline1)
-			master_chan <- a	
+			master_chan <- a.Dist_msg	
 		}
 	}
 }

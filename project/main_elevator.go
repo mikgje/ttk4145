@@ -22,6 +22,7 @@ var(
 	abort_timer_channel = make(chan bool)
 )
 
+// Flags for the elevator's health status
 const(
 	UNHEALTHY_FLAG int = -1
 	HEALTHY_FLAG int = 100

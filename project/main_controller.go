@@ -40,6 +40,7 @@ func augment_request_array(elevator_service_orders [elevator.N_FLOORS][elevator.
 	return augmented_requests
 }
 
+//Based on orderline broadcasted from network, extract the orders for the current controller
 func extract_orderline(orderlines utilities.OrderDistributionMessage) [elevator.N_FLOORS][elevator.N_BUTTONS - 1]bool {
 	switch controller_id {
 	case 0:
@@ -53,6 +54,7 @@ func extract_orderline(orderlines utilities.OrderDistributionMessage) [elevator.
 	}
 }
 
+//TEMP_transmit_network is a placeholder for the network transmit function, simulating receiveing an orderline
 func TEMP_receive_network(network_receive_chan chan<- utilities.OrderDistributionMessage) {
 	fmt.Println("Starting network receive function")
 	var new_order_list = utilities.OrderDistributionMessage{

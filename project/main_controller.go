@@ -23,7 +23,7 @@ var (
 	network_send_chan = make(chan utilities.StatusMessage)
 	network_receive_status_chan = make(chan utilities.StatusMessage) //Unsure about the datatype of this channel
 	network_receive_order_chan = make(chan utilities.OrderDistributionMessage)
-	current_elevator 		  elevator.Elevator
+	current_elevator 		  elevator.Elevator // Controllers copy of elevator, to be used when transmitting status messages
 )
 
 // Enum for controller states

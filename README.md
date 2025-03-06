@@ -10,6 +10,7 @@ We have use a peer-to-peer system with a master/slave architecure. We use UDP br
 We have implemented necessary modules to be integrated together, but we have not yet integrated them. This means, although the controller and the elevator communicate together correctly, we have not managed interaction between multiple elevators. Nor have we tested the slave/master interaction and having elevators being assigned service orders outside of their node.
 Note: the elevator and controller modules are complete, while the hall-order-assigner and network modules are not. For the network module, channel communication has been partly implemented. 
 Logic for deciding primary/master and backup has not been implemented yet.
+Take a look at usecase.md inside hall_order_assigner for more information about the assigner.
 
 **Our project so far**:
 The elevator software to run on a single computer is comprised of four main modules (outside the main function used to call them and run the program): main_elevator, main_controller, hall_order_assigner and network.

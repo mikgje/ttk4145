@@ -1,11 +1,11 @@
-package network_slave
+//package network_slave
+package main
 
 import (
 	"Network-go/network/bcast"
 	"Network-go/network/localip"
 	"Network-go/network/peers"
 	"main/utilities"
-	"main/elev_algo_go/elevator"
 	"flag"
 	"fmt"
 	"os"
@@ -19,6 +19,15 @@ type Node_msg struct {
 
 // For testing purposes, not finished
 func main() {
+	// Channel for the controller to receive status from elevator
+	elevator_chan := make(chan utilities.StatusMessage)
+
+	go network_slave(elevator_chan)
+
+	for {}
+}
+
+func network_slave(elevator_chan <-chan utilities.StatusMessage) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -42,19 +51,16 @@ func main() {
 	go bcast.Transmitter(16569, node_tx)
 	go bcast.Receiver(16569, node_rx)
 
+	node_msg := Node_msg{}
+
 	go func() {
-		// Test value
-		node_msg := Node_msg{
-			utilities.StatusMessage{
-				"S",1,"test",1,"up",[elevator.N_FLOORS][elevator.N_BUTTONS]bool{
-					{true, false},
-					{false, true},
-					{true, true},
-					{false, false},
-				},
-			},
-		}
 		for {
+			select {
+			// Update the status if the elevator has sent a new status
+			case new_status := <- elevator_chan:
+				node_msg.Status_msg = new_status
+			default:
+			}
 			node_tx <- node_msg
 			time.Sleep(1 * time.Second)
 		}
@@ -71,6 +77,7 @@ func main() {
 
 		case a := <- node_rx:
 			fmt.Printf("Received: %#v\n", a)
+			// The slave is only interested in the OrderDistributionMessage containing its service orders. Need to implement logic to filter this out.
 		}
 	}
 }

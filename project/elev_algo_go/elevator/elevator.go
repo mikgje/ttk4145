@@ -4,11 +4,7 @@ import (
 	"fmt"
 	"main/elevio"
 	"strings"
-)
-
-const (
-	N_FLOORS  int = 4
-	N_BUTTONS int = 3
+	"main/utilities"
 )
 
 type ElevatorBehaviour int
@@ -19,7 +15,7 @@ type Button int
 type Elevator struct {
 	Floor     int
 	Dirn      elevio.MotorDirection
-	Requests  [N_FLOORS][N_BUTTONS]bool
+	Requests  [utilities.N_FLOORS][utilities.N_BUTTONS]bool
 	Behaviour ElevatorBehaviour
 
 	Config struct {
@@ -39,6 +35,7 @@ const (
 	EB_Idle ElevatorBehaviour = iota
 	EB_DoorOpen
 	EB_Moving
+	EB_Unhealthy
 )
 
 // map elevator behaviour to strings for printing
@@ -93,9 +90,9 @@ func Elevator_print(elevator Elevator) {
         elevator.Floor, Dirn_to_string[elevator.Dirn], EB_to_string[elevator.Behaviour], CV_to_string[elevator.Config.ClearRequestVariant], elevator.Config.DoorOpenDuration_s)
 
     requests := "Requests:\n"
-    for floor := 0; floor < N_FLOORS; floor++ {
+    for floor := 0; floor < utilities.N_FLOORS; floor++ {
         requests += fmt.Sprintf("  Floor %d: [", floor)
-        for btn := 0; btn < N_BUTTONS; btn++ {
+        for btn := 0; btn < utilities.N_BUTTONS; btn++ {
             if elevator.Requests[floor][btn] {
                 requests += fmt.Sprintf(" %s ", Button_to_string[elevio.ButtonType(btn)])
             } else {

@@ -1,7 +1,7 @@
 package utilities
 
 import (
-	"main/elev_algo_go/elevator"
+
 )
 
 type StatusMessage struct {
@@ -10,10 +10,20 @@ type StatusMessage struct {
 	Behaviour     string
 	Floor         int
 	Direction     string
-	Node_orders   [elevator.N_FLOORS][elevator.N_BUTTONS]bool
+	Node_orders   [N_FLOORS][N_BUTTONS]bool
 }
 
 type OrderDistributionMessage struct {
 	Label string
-	Orderlines [3][elevator.N_FLOORS][elevator.N_BUTTONS - 1]bool
+	Orderlines [3][N_FLOORS][N_BUTTONS - 1]bool
 }
+
+
+/*========================================PROJECT CONSTANTS========================================*/
+
+const (
+	N_FLOORS  int = 4
+	N_BUTTONS int = 3
+	UNHEALTHY_FLAG int = -1
+	HEALTHY_FLAG int = 100
+)

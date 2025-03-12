@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"main/elev_algo_go/elevator"
 	"main/elevio"
+	"main/main_controller"
+	"main/main_elevator"
 )
 
 var (
@@ -30,8 +32,8 @@ func main() {
 
 	fmt.Println("Starting controller and elevetor")
 
-	go main_controller()
-	go main_elevator()
+	go main_controller.Main_controller(controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan)
+	go main_elevator.Main_elevator(obstruction_timer_duration, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan)
 	for {
 	}
 

@@ -10,6 +10,10 @@ import (
 
 var Elevator_cab elevator.Elevator
 
+func Fsm_return_elevator() elevator.Elevator {
+	return Elevator_cab
+}
+
 func Fsm_init() {
 	Elevator_cab = elevator.Elevator_uninitialised()
 }

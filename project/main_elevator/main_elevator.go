@@ -46,6 +46,7 @@ func Main_elevator(obstruction_timer_duration int,
 	for {
 		select {
 		case button := <-button_channel:
+			elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
 			elev_to_ctrl_button_chan <- button
 			// fsm.Fsm_on_request_button_press(button.Floor, button.Button, door_timer_channel)
 

@@ -6,6 +6,7 @@ import (
 	"main/elev_algo_go/requests_elev"
 	"main/elev_algo_go/timer"
 	"main/elevio"
+	"main/utilities"
 )
 
 var Elevator_cab elevator.Elevator
@@ -14,13 +15,21 @@ func Fsm_return_elevator() elevator.Elevator {
 	return Elevator_cab
 }
 
+func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool){
+	for floor := 0; floor < utilities.N_FLOORS; floor++ {
+		for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
+			Elevator_cab.Requests[floor][btn] = orders[floor][btn]
+		}
+	}
+}
+
 func Fsm_init() {
 	Elevator_cab = elevator.Elevator_uninitialised()
 }
 
 func Fsm_set_all_lights(es elevator.Elevator) {
-	for floor := 0; floor < elevator.N_FLOORS; floor++ {
-		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
+	for floor := 0; floor < utilities.N_FLOORS; floor++ {
+		for btn := 0; btn < utilities.N_BUTTONS; btn++ {
 			// outputDevice.requestButtonLight(floor, btn, es.Requests[floor][btn])
 			elevio.SetButtonLamp(elevio.ButtonType(btn), floor, bool(es.Requests[floor][btn]))
 		}

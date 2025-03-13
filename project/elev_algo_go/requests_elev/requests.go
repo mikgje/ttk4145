@@ -3,6 +3,7 @@ package requests_elev
 import (
 	"main/elev_algo_go/elevator"
 	"main/elevio"
+	"main/utilities"
 )
 
 type DirnBehaviourPair struct {
@@ -11,8 +12,8 @@ type DirnBehaviourPair struct {
 }
 
 func requestsAbove(e elevator.Elevator) bool {
-	for f := e.Floor + 1; f < elevator.N_FLOORS; f++ {
-		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
+	for f := e.Floor + 1; f < utilities.N_FLOORS; f++ {
+		for btn := 0; btn < utilities.N_BUTTONS; btn++ {
 			if e.Requests[f][btn] {
 				return true
 			}
@@ -23,7 +24,7 @@ func requestsAbove(e elevator.Elevator) bool {
 
 func requestsBelow(e elevator.Elevator) bool {
 	for f := 0; f < e.Floor; f++ {
-		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
+		for btn := 0; btn < utilities.N_BUTTONS; btn++ {
 			if e.Requests[f][btn] {
 				return true
 			}
@@ -33,7 +34,7 @@ func requestsBelow(e elevator.Elevator) bool {
 }
 
 func requestsHere(e elevator.Elevator) bool {
-	for btn := 0; btn < elevator.N_BUTTONS; btn++ {
+	for btn := 0; btn < utilities.N_BUTTONS; btn++ {
 		if e.Requests[e.Floor][btn] {
 			return true
 		}
@@ -118,7 +119,7 @@ func Requests_should_clear_immediately(e elevator.Elevator, btnFloor int, btnTyp
 func Requests_clear_at_current_floor(e elevator.Elevator) elevator.Elevator {
 	switch e.Config.ClearRequestVariant {
 	case elevator.CV_All:
-		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
+		for btn := 0; btn < utilities.N_BUTTONS; btn++ {
 			e.Requests[e.Floor][btn] = false
 		}
 

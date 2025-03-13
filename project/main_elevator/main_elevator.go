@@ -14,7 +14,11 @@ import (
 
 var current_elevator elevator.Elevator
 
-func Main_elevator(obstruction_timer_duration int, elev_to_ctrl_chan chan<- elevator.Elevator, elev_to_ctrl_button_chan chan<- elevio.ButtonEvent, ctrl_to_elev_chan <-chan elevio.ButtonEvent) {
+func Main_elevator(obstruction_timer_duration int,
+	elev_to_ctrl_chan chan<- elevator.Elevator,
+	elev_to_ctrl_button_chan chan<- elevio.ButtonEvent,
+	ctrl_to_elev_chan <-chan [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_cab_chan <-chan elevio.ButtonEvent) {
 
 	// elevio.SetStopLamp(false)
 	numFloors := 4
@@ -58,7 +62,7 @@ func Main_elevator(obstruction_timer_duration int, elev_to_ctrl_chan chan<- elev
 				if fsm.Elevator_cab.Behaviour == elevator.EB_Unhealthy { //Check if unhealthy and handle this only to prevent blocking in abort_timer_channel
 					fsm.Elevator_cab.Behaviour = elevator.EB_Idle
 					elevio.SetStopLamp(false)
-					elev_to_ctrl_button_chan <- elevio.ButtonEvent{Floor: utilities.HEALTHY_FLAG, Button: elevio.BT_Cab}
+					elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
 				} else {
 					fmt.Println("Obstruction removed, stopping timer")
 					abort_timer_channel <- false
@@ -68,7 +72,7 @@ func Main_elevator(obstruction_timer_duration int, elev_to_ctrl_chan chan<- elev
 		case <-obstruction_timer_channel: //The obstruction timer has fired, the elevator is inoperable and communicates this to the controller
 			fsm.Elevator_cab.Behaviour = elevator.EB_Unhealthy
 			elevio.SetStopLamp(true)
-			elev_to_ctrl_button_chan <- elevio.ButtonEvent{Floor: utilities.UNHEALTHY_FLAG, Button: elevio.BT_Cab}
+			elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
 
 		case <-door_timer_channel:
 			// fmt.Println("Status: ", is_elevator_healthy)
@@ -80,6 +84,8 @@ func Main_elevator(obstruction_timer_duration int, elev_to_ctrl_chan chan<- elev
 			}
 
 		case msg := <-ctrl_to_elev_chan:
+			fsm.Fsm_overwrite_hall_orders(msg)
+		case msg := <-ctrl_to_elev_cab_chan:
 			fsm.Fsm_on_request_button_press(msg.Floor, msg.Button, door_timer_channel)
 		default:
 

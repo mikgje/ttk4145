@@ -43,6 +43,7 @@ var EB_to_string = map[ElevatorBehaviour]string{
 	EB_Idle:     "EB_idle",
 	EB_DoorOpen: "EB_doorOpen",
 	EB_Moving:   "EB_moving",
+	EB_Unhealthy: "EB_unhealthy",
 }
 
 // map elevator direction to strings

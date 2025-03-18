@@ -32,7 +32,7 @@ func main() {
 	bcast_sorders_chan := make(chan utilities.OrderDistributionMessage)
 	elevator_chan := make(chan utilities.StatusMessage)
 
-	go network(assign_chan, bcast_sorders_chan, elevator_chan)
+	go Network(assign_chan, bcast_sorders_chan, elevator_chan)
 	for {	
 		assign_chan <- utilities.OrderDistributionMessage{Label : "Ø", Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
 			{	{true,false},
@@ -55,7 +55,7 @@ func main() {
 	}
 }
 
-func network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, elevator_chan <-chan utilities.StatusMessage) {
+func Network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, elevator_chan <-chan utilities.StatusMessage) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()

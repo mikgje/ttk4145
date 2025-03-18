@@ -5,11 +5,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"main/controller"
 	"main/elev_algo_go/elevator"
 	"main/elevio"
-	"main/main_controller"
-	"main/main_elevator"
 	"main/utilities"
+	"main/single_elevator"
+
 	// "os"
 	"strconv"
 )
@@ -33,7 +34,7 @@ func main() {
 	}
 	controller_id, _ = strconv.Atoi(flag.Arg(0))
 	fmt.Println("Controller id: ", controller_id)
-	
+
 	if *debug {
 		fmt.Println("Debug mode enabled")
 		obstruction_timer_duration = 5
@@ -44,8 +45,8 @@ func main() {
 
 	fmt.Println("Starting controller and elevetor")
 
-	go main_controller.Main_controller(controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
-	go main_elevator.Main_elevator(obstruction_timer_duration, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
+	go controller.Start(controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
+	go single_elevator.Start(obstruction_timer_duration, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
 	for {
 	}
 

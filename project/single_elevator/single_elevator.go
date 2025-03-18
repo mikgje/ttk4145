@@ -1,4 +1,4 @@
-package main_elevator
+package single_elevator
 
 import (
 	// "main/elev_algo_go/elevator"
@@ -14,7 +14,7 @@ import (
 
 var current_elevator elevator.Elevator
 
-func Main_elevator(obstruction_timer_duration int,
+func Start(obstruction_timer_duration int,
 	elev_to_ctrl_chan chan<- elevator.Elevator,
 	elev_to_ctrl_button_chan chan<- elevio.ButtonEvent,
 	ctrl_to_elev_chan <-chan [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,

@@ -5,15 +5,15 @@ import (
 	"main/elevio"
 
 	//FOR TESTING
-	"fmt"
+	// "fmt"
 )
 func Augment_request_array(elevator_service_orders [utilities.N_FLOORS][utilities.N_BUTTONS]bool, new_order elevio.ButtonEvent) [utilities.N_FLOORS][utilities.N_BUTTONS]bool {
 	augmented_requests := elevator_service_orders
 	augmented_requests[new_order.Floor][new_order.Button] = true
 
-	fmt.Println("Augmented requests:")
-	fmt.Println(augmented_requests)
-	fmt.Println("-------------------")
+	// fmt.Println("Augmented requests:")
+	// fmt.Println(augmented_requests)
+	// fmt.Println("-------------------")
 
 	return augmented_requests
 }

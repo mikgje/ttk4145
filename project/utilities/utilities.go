@@ -1,11 +1,6 @@
 package utilities
 
-import (
-
-)
-
 type StatusMessage struct {
-	Label string
 	Controller_id int
 	Behaviour     string
 	Floor         int
@@ -14,16 +9,22 @@ type StatusMessage struct {
 }
 
 type OrderDistributionMessage struct {
-	Label string
 	Orderlines [3][N_FLOORS][N_BUTTONS - 1]bool
 }
 
+type State int
+
+const (
+	State_slave State = iota
+	State_master
+	State_disconnected
+)
 
 /*========================================PROJECT CONSTANTS========================================*/
 
 const (
 	N_FLOORS  int = 4
 	N_BUTTONS int = 3
-	UNHEALTHY_FLAG int = -1
-	HEALTHY_FLAG int = 100
+
+	N_ELEV int = 3
 )

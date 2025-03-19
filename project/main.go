@@ -8,11 +8,9 @@ import (
 	"main/controller"
 	"main/elev_algo_go/elevator"
 	"main/elevio"
-	"main/utilities"
 	"main/single_elevator"
-
+	"main/utilities"
 	// "os"
-	"strconv"
 )
 
 var (
@@ -21,19 +19,11 @@ var (
 	ctrl_to_elev_chan          = make(chan [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, 1)
 	ctrl_to_elev_cab_chan      = make(chan elevio.ButtonEvent, 1)
 	obstruction_timer_duration int
-	controller_id              int
 )
 
 func main() {
 	debug := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
-
-	if flag.NArg() < 1 {
-		fmt.Println("Please provide controller id as argument")
-		return
-	}
-	controller_id, _ = strconv.Atoi(flag.Arg(0))
-	fmt.Println("Controller id: ", controller_id)
 
 	if *debug {
 		fmt.Println("Debug mode enabled")
@@ -45,7 +35,7 @@ func main() {
 
 	fmt.Println("Starting controller and elevetor")
 
-	go controller.Start(controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
+	go controller.Start(elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
 	go single_elevator.Start(obstruction_timer_duration, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
 	for {
 	}

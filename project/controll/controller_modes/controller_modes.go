@@ -8,12 +8,13 @@ import (
 	"main/utilities"
 )
 
-func Normal(current_elevator* elevator.Elevator, controller_id int,
+func base_controller(current_elevator* elevator.Elevator, controller_id int,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.StatusMessage) {
+	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	kill_base_ctrl_chan <-chan bool){
 
 	var augmented_requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool
 	for {
@@ -32,41 +33,93 @@ func Normal(current_elevator* elevator.Elevator, controller_id int,
 				augmented_requests = controller_tools.Augment_request_array(current_elevator.Requests, new_order)
 				status_message := utilities.StatusMessage{Controller_id: controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 					Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
-
-				fmt.Println("Sending new orders to network")
-				ctrl_to_network_chan <- status_message
-			}
-		// case msg := <-network_receive_order_chan:
+					
+					fmt.Println("Sending new orders to network")
+					ctrl_to_network_chan <- status_message
+				}
+		// case msg := <-network_receive_order_chan /*The channel that supplies the ODM*/:
 		// 	new_orders := controller_tools.Extract_orderline(controller_id, msg)
 		// 	fmt.Println("Received new orders from network")
 		// 	ctrl_to_elev_chan <- new_orders
+		case <-kill_base_ctrl_chan:
+			return
 		}
 	}
 }
 
-func Backup(current_elevator* elevator.Elevator, controller_id int,
+
+func Slave(state* utilities.State, current_elevator* elevator.Elevator, controller_id int,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage) {
 
+	kill_base_ctrl_chan := make(chan bool)
+
+	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, kill_base_ctrl_chan)
+	// for {
+	// 	if (/*MASTER*/){
+	// 		*state = utilities.State_master
+	// 		kill_base_ctrl_chan <- true
+	// 		fmt.Println("Switching to master mode")
+	// 		return
+	// 	} else if (/*DISCONNECTED*/){
+	// 		*state = utilities.State_disconnected
+	// 		kill_base_ctrl_chan <- true
+	// 		fmt.Println("Switching to disconnected mode")
+	// 		return
+	// 	}
+	// }
+	for {}
 }
 
-func Primary(current_elevator* elevator.Elevator, controller_id int,
+
+func Master(state* utilities.State, current_elevator* elevator.Elevator, controller_id int,
+	elev_to_ctrl_chan <-chan elevator.Elevator,
+	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
+	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
+	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	ODM_to_network_chan chan<- utilities.OrderDistributionMessage) {
+
+	// var status_messages_to_assigner [utilities.N_ELEV]utilities.StatusMessage
+	var kill_base_ctrl_chan = make(chan bool)
+	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, kill_base_ctrl_chan)
+
+
+
+}
+
+func Disconnected(state* utilities.State, current_elevator* elevator.Elevator, controller_id int,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage) {
 
+	for {
+		select {
+		case msg := <-elev_to_ctrl_chan:
+			*current_elevator = msg
+		case msg := <-elev_to_ctrl_button_chan:
+			new_order_floor := msg.Floor
+			new_order_button := msg.Button
+			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
+			fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
+			if new_order_button == elevio.BT_Cab {
+				ctrl_to_elev_cab_chan <- new_order
+			} else {
+				fmt.Println("Disconnected, cannot send orders to network")
+			}
+		default:
+			// if (/*RECONNECTED*/){
+			// 	*state = utilities.State_slave
+			// 	fmt.Println("Switching to slave mode")
+			// 	return
+			// }
+		}
+	}
+
 }
 
-func Disconnected(current_elevator* elevator.Elevator, controller_id int,
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.StatusMessage) {
-
-}

@@ -1,5 +1,5 @@
 //package network_master
-package main
+package network
 
 import (
 	"Network-go/network/bcast"
@@ -34,7 +34,7 @@ func main() {
 
 	go Network(assign_chan, bcast_sorders_chan, elevator_chan)
 	for {	
-		assign_chan <- utilities.OrderDistributionMessage{Label : "Ø", Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
+		assign_chan <- utilities.OrderDistributionMessage{Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
 			{	{true,false},
 				{false,true},
 				{true,true},

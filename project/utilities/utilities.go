@@ -23,8 +23,7 @@ const (
 /*========================================PROJECT CONSTANTS========================================*/
 
 const (
-	N_FLOORS  int = 4
-	N_BUTTONS int = 3
-
-	N_ELEV int = 3
+	N_FLOORS  	int = 4
+	N_BUTTONS 	int = 3
+	N_ELEVS 	int = 3
 )

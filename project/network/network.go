@@ -1,5 +1,5 @@
-//package network_master
-package main
+package network
+//package main
 // FAILURE: REMEMBER TO CHANGE PORTS!
 // FAILURE: MAKE SURE THAT THERE AREN'T PROBLEMATIC SYNCHRONIZATION PROBLEMS BETWEEN READING MASTER IN NETWORK AND WRITING MASTER IN P2P
 import (
@@ -24,7 +24,8 @@ import (
 // TODO: find out if its an issue with status message using ctrl_id of type int
 
 type Network struct {
-	Master bool
+	Master 		bool
+	Connection	bool
 	// System interface
 	node_msg 	Node_msg
 	statuses 	[utilities.N_ELEVS]utilities.StatusMessage
@@ -41,6 +42,7 @@ type Node_msg struct {
 	SM		utilities.StatusMessage
 }
 
+/*
 // For testing purposes
 func main() {
 	// Channel to receive service orders TODO: decide if there either should be a goroutine permanently writing/reading, or if the channel should be used with a buffer size 1
@@ -52,7 +54,7 @@ func main() {
 	// Channel to transmit all statuses except local
 	status_chan := make(chan utilities.StatusMessage, utilities.N_ELEVS-1)
 
-	go network(assign_chan, bcast_sorders_chan, controller_chan, status_chan)
+	go Network(assign_chan, bcast_sorders_chan, controller_chan, status_chan)
 	for {	
 		select {
 		case assign_chan <- utilities.OrderDistributionMessage{Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
@@ -78,9 +80,9 @@ func main() {
 		time.Sleep(3*time.Second)
 	}
 }
+*/
 
-func network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, controller_chan <-chan utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
-	var network Network
+func Network_master(network* Network, assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, controller_chan <-chan utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -107,10 +109,10 @@ func network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorder
 
 
 	// Network and rest of system interface
-	go network_interface(&network, node_tx, node_rx, assign_chan, bcast_sorders_chan, controller_chan, status_chan)
+	go network_interface(network, node_tx, node_rx, assign_chan, bcast_sorders_chan, controller_chan, status_chan)
 
 	// P2P and master-slave interface
-	go p2p_interface(&network, id, peerUpdateCh)
+	go p2p_interface(network, id, peerUpdateCh)
 
 	for {
 	}
@@ -132,6 +134,7 @@ func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Nod
 				network.node_msg.Label = ""
 			default:
 			}
+			// TODO: A hasnt implemented status_chan yet, this will halt
 			write_statuses(network.statuses, status_chan)
 		}
 		// Everyone
@@ -170,6 +173,7 @@ func p2p_interface(network* Network, id string, peerUpdateCh chan peers.PeerUpda
 		case network.nodes = <-peerUpdateCh:
 			network.others = find_others(network.nodes, id)
 			network.Master = decide_master(network.id, network.others)
+			network.Connection = check_connection(network.nodes, id)
 			network.N_nodes = len(network.nodes.Peers)
 			fmt.Printf("Peer update:\n")
 			fmt.Printf("  Peers:    %q\n", network.nodes.Peers)
@@ -211,6 +215,15 @@ func find_others(p peers.PeerUpdate, id string) []string {
 		}
 	}
 	return others
+}
+
+func check_connection(p peers.PeerUpdate, id string) bool {
+	for _, element := range p.Lost {
+		if element == id {
+			return false
+		}
+	}
+	return true
 }
 
 func decide_master(pid string, others []string) bool {

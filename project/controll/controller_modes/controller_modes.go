@@ -6,6 +6,7 @@ import (
 	"main/elev_algo_go/elevator"
 	"main/elevio"
 	"main/utilities"
+	"main/network"
 )
 
 func base_controller(current_elevator* elevator.Elevator, controller_id int,
@@ -53,25 +54,27 @@ func Slave(state* utilities.State, current_elevator* elevator.Elevator, controll
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.StatusMessage) {
+	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	net* network.Network) {
 
 	kill_base_ctrl_chan := make(chan bool)
 
 	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, kill_base_ctrl_chan)
-	// for {
-	// 	if (/*MASTER*/){
-	// 		*state = utilities.State_master
-	// 		kill_base_ctrl_chan <- true
-	// 		fmt.Println("Switching to master mode")
-	// 		return
-	// 	} else if (/*DISCONNECTED*/){
-	// 		*state = utilities.State_disconnected
-	// 		kill_base_ctrl_chan <- true
-	// 		fmt.Println("Switching to disconnected mode")
-	// 		return
-	// 	}
-	// }
-	for {}
+	for {
+		if net.Master {
+	 		*state = utilities.State_master
+	 		kill_base_ctrl_chan <- true
+	 		fmt.Println("Switching to master mode")
+	 		return
+	 	} else if !net.Connection {
+	 		*state = utilities.State_disconnected
+	 		kill_base_ctrl_chan <- true
+	 		fmt.Println("Switching to disconnected mode")
+	 		return
+	 	}
+		
+	}
+	// for {}
 }
 
 
@@ -81,14 +84,20 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
-	ODM_to_network_chan chan<- utilities.OrderDistributionMessage) {
+	ODM_to_network_chan chan<- utilities.OrderDistributionMessage,
+	net* network.Network) {
 
 	// var status_messages_to_assigner [utilities.N_ELEV]utilities.StatusMessage
 	var kill_base_ctrl_chan = make(chan bool)
 	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, kill_base_ctrl_chan)
-
-
-
+	for {
+		if !net.Master {
+			*state = utilities.State_master
+			kill_base_ctrl_chan <- true
+			fmt.Println("Switching to slave mode")
+			return
+		}
+	}
 }
 
 func Disconnected(state* utilities.State, current_elevator* elevator.Elevator, controller_id int,
@@ -96,7 +105,8 @@ func Disconnected(state* utilities.State, current_elevator* elevator.Elevator, c
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.StatusMessage) {
+	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	net* network.Network) {
 
 	for {
 		select {
@@ -113,11 +123,11 @@ func Disconnected(state* utilities.State, current_elevator* elevator.Elevator, c
 				fmt.Println("Disconnected, cannot send orders to network")
 			}
 		default:
-			// if (/*RECONNECTED*/){
-			// 	*state = utilities.State_slave
-			// 	fmt.Println("Switching to slave mode")
-			// 	return
-			// }
+			if net.Connection {
+				*state = utilities.State_slave
+			 	fmt.Println("Switching to slave mode")
+			 	return
+			}
 		}
 	}
 

@@ -37,12 +37,12 @@ func base_controller(current_elevator* elevator.Elevator, controller_id int,
 				status_message := utilities.StatusMessage{Controller_id: controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 					Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
 					
-					fmt.Println("Sending new orders to network")
+					//fmt.Println("Sending new orders to network")
 					ctrl_to_network_chan <- status_message
 				}
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/:
 			new_orders := controller_tools.Extract_orderline(controller_id, msg)
-			fmt.Println("Received new orders from network")
+			//fmt.Println("Received new orders from network")
 			ctrl_to_elev_chan <- new_orders
 		case <-kill_base_ctrl_chan:
 			return

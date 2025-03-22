@@ -17,7 +17,7 @@ func assign_hall_requests(input map[string]interface{}) (map[string]interface{},
 		return nil, fmt.Errorf("error marshalling input JSON: %v", err)
 	}
 
-	fmt.Println("Sending to hall_request_assigner:", string(input_json))
+	//fmt.Println("Sending to hall_request_assigner:", string(input_json))
 
 	// cmd is our executable, where the orders are truly assigned
 	cmd := exec.Command("controll/hall_order_assigner/hall_request_assigner", "-i", string(input_json))
@@ -26,7 +26,7 @@ func assign_hall_requests(input map[string]interface{}) (map[string]interface{},
 	cmd.Stdout = &output_buffer
 	cmd.Stderr = &output_buffer
 
-	fmt.Println("Running hall_request_assigner...")
+	//fmt.Println("Running hall_request_assigner...")
 
 	err = cmd.Run()
 	if err != nil {
@@ -34,7 +34,7 @@ func assign_hall_requests(input map[string]interface{}) (map[string]interface{},
 		return nil, fmt.Errorf("error running hall_request_assigner: %v", err)
 	}
 
-	fmt.Println("Raw output from hall_request_assigner:", output_buffer.String())
+	//fmt.Println("Raw output from hall_request_assigner:", output_buffer.String())
 
 	var output map[string]interface{}
 	// back to Go from JSON format

@@ -18,6 +18,7 @@ func Augment_request_array(elevator_service_orders [utilities.N_FLOORS][utilitie
 	return augmented_requests
 }
 
+// TODO: make scalable
 func Extract_orderline(controller_id int, orderlines utilities.OrderDistributionMessage) [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
 	switch controller_id {
 	case 0:

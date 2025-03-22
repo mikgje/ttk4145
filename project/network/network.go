@@ -151,7 +151,7 @@ func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Nod
 			node_tx <- network.node_msg
 			network.node_msg.Label = ""
 		case received := <- node_rx:
-			fmt.Println(received)
+			//fmt.Println(received)
 			if received.Label == "O" {
 				if !network.Master {
 					network.node_msg.ODM = received.ODM

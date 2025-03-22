@@ -34,6 +34,6 @@ func order_distribution_message(raw_output map[string]interface{}) (utilities.Or
 		}
 	}
 
-	fmt.Println(ODM)
+//	fmt.Println(ODM)
 	return ODM, nil
 }

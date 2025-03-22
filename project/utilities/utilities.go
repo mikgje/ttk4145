@@ -9,7 +9,7 @@ type StatusMessage struct {
 }
 
 type OrderDistributionMessage struct {
-	Orderlines [N_ELEV][N_FLOORS][N_BUTTONS - 1]bool
+	Orderlines [N_ELEVS][N_FLOORS][N_BUTTONS - 1]bool
 }
 
 type State int

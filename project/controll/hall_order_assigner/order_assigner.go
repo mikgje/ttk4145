@@ -20,7 +20,7 @@ func assign_hall_requests(input map[string]interface{}) (map[string]interface{},
 	fmt.Println("Sending to hall_request_assigner:", string(input_json))
 
 	// cmd is our executable, where the orders are truly assigned
-	cmd := exec.Command("./hall_request_assigner", "-i", string(input_json))
+	cmd := exec.Command("controll/hall_order_assigner/hall_request_assigner", "-i", string(input_json))
 
 	var output_buffer bytes.Buffer
 	cmd.Stdout = &output_buffer

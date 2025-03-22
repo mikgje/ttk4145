@@ -107,6 +107,11 @@ func Network_master(network* Network, assign_chan <-chan utilities.OrderDistribu
 	go bcast.Transmitter(16569, node_tx)
 	go bcast.Receiver(16569, node_rx)
 
+	//TODO: prettify
+	for i := 0; i < utilities.N_ELEVS; i++ {
+		network.statuses[i].Direction = "stop"
+		network.statuses[i].Behaviour = "idle"
+	}
 
 	// Network and rest of system interface
 	go network_interface(network, node_tx, node_rx, assign_chan, bcast_sorders_chan, controller_chan, status_chan)
@@ -185,6 +190,7 @@ func p2p_interface(network* Network, id string, peerUpdateCh chan peers.PeerUpda
 
 func write_statuses(statuses [utilities.N_ELEVS]utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
 	if len(status_chan) == 0 {
+		// TODO: presumed that own ID is i = 0, since this will be used only(?) when master. Problem?
 		for i := 1; i < utilities.N_ELEVS; i++ {
 			status_chan <- statuses[i]
 		}

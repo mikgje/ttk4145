@@ -32,12 +32,12 @@ func build_assigner_input_from_status_messages(statuses []utilities.StatusMessag
 			"behaviour":   s.Behaviour,
 			"floor":       s.Floor,
 			"direction":   s.Direction,
-			"cab_requests": cab_requests,
+			"cabRequests": cab_requests,
 		}
 	}
 
 	return map[string]interface{}{
-		"hall_requests": hall_requests, 
+		"hallRequests": hall_requests, 
 		"states":        states,      
 	}
 }

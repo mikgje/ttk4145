@@ -16,6 +16,7 @@ func base_controller(current_elevator* elevator.Elevator, controller_id int,
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	network_to_ctrl_chan <-chan utilities.OrderDistributionMessage,
 	kill_base_ctrl_chan <-chan bool){
 
 	var augmented_requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool
@@ -39,7 +40,7 @@ func base_controller(current_elevator* elevator.Elevator, controller_id int,
 					fmt.Println("Sending new orders to network")
 					ctrl_to_network_chan <- status_message
 				}
-		case msg := <-network_receive_order_chan /*The channel that supplies the ODM*/:
+		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/:
 			new_orders := controller_tools.Extract_orderline(controller_id, msg)
 			fmt.Println("Received new orders from network")
 			ctrl_to_elev_chan <- new_orders
@@ -56,11 +57,12 @@ func Slave(state* utilities.State, current_elevator* elevator.Elevator, controll
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	network_to_ctrl_chan <-chan utilities.OrderDistributionMessage,
 	net* network.Network) {
 
 	kill_base_ctrl_chan := make(chan bool)
 
-	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, kill_base_ctrl_chan)
+	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
 	for {
 		if net.Master {
 	 		*state = utilities.State_master
@@ -85,15 +87,16 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	network_to_ctrl_chan <-chan utilities.OrderDistributionMessage,
 	ODM_to_network_chan chan<- utilities.OrderDistributionMessage,
-	other_elevators_status <-chan utilities.StatusMessage
+	other_elevators_status <-chan utilities.StatusMessage,
 	net* network.Network) {
 
 	var healthy_elevators_status = make(map[int]utilities.StatusMessage)
 	var unhealty_elevators = make(map[int]bool)
 	var kill_base_ctrl_chan = make(chan bool)
 
-	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, kill_base_ctrl_chan)
+	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
 
 	for {
 		select {
@@ -115,11 +118,11 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 			for _, status := range healthy_elevators_status{
 				status_to_order_handler = append(status_to_order_handler, status)
 			}
-			
-			ODM_to_network_chan <- order_handler.Order_handler()
+		
+			ODM_to_network_chan <- order_handler.Order_handler(status_to_order_handler)
 
 		default:
-			if (/*DISCONNECTED*/){
+			if net.Connection {
 				*state = utilities.State_disconnected
 				kill_base_ctrl_chan <- true
 				fmt.Println("Switching to disconnected mode")

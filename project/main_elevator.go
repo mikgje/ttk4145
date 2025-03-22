@@ -43,11 +43,12 @@ func main_elevator() {
 	for {
 		select {
 		case button := <-button_channel:
-			elev_to_ctrl_chan <- button
+			elev_to_ctrl_button_chan <- button
 			// fsm.Fsm_on_request_button_press(button.Floor, button.Button, timer_channel)
 
 		case floor := <-floor_channel:
 			fsm.Fsm_on_floor_arrival(floor, timer_channel)
+			elev_to_ctrl_chan <- fsm.Elevator_cab
 
 		case obstruction := <-obstruction_channel:
 			is_elevator_obstructed = obstruction
@@ -58,7 +59,7 @@ func main_elevator() {
 				if !healthy { //Check if unhealthy and handle this only to prevent blocking in abort_timer_channel
 					healthy = true
 					elevio.SetStopLamp(false)
-					elev_to_ctrl_chan <- elevio.ButtonEvent{Floor: HEALTHY_FLAG, Button: elevio.BT_Cab}
+					elev_to_ctrl_button_chan <- elevio.ButtonEvent{Floor: HEALTHY_FLAG, Button: elevio.BT_Cab}
 				} else {
 					fmt.Println("Obstruction removed, stopping timer")
 					abort_timer_channel <- false
@@ -68,7 +69,7 @@ func main_elevator() {
 		case <-obstruction_timer_channel: //The obstruction timer has fired, the elevator is inoperable and communicates this to the controller
 			healthy = false
 			elevio.SetStopLamp(true)
-			elev_to_ctrl_chan <- elevio.ButtonEvent{Floor: UNHEALTHY_FLAG, Button: elevio.BT_Cab}
+			elev_to_ctrl_button_chan <- elevio.ButtonEvent{Floor: UNHEALTHY_FLAG, Button: elevio.BT_Cab}
 
 		case <-timer_channel:
 			// fmt.Println("Status: ", is_elevator_healthy)

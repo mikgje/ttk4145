@@ -5,40 +5,23 @@ import (
 	"fmt"
 	"main/elev_algo_go/elevator"
 	"main/elevio"
+	"main/utilities"
 
 	//For testing
 	"main/elev_algo_go/timer"
 )
 
 type State int
-type StatusMessage struct {
-	controller_id int
-	behaviour string
-	floor int
-	direction string
-	node_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool
-}
-
-type OrderDistributionMessage struct{
-	orderline0 struct{
-		new_hall_orders [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool
-	}
-	orderline1 struct{
-		new_hall_orders [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool
-	}
-	orderline2 struct{
-		new_hall_orders [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool
-	}
-}
 
 var (
-	controller_id int;
-	is_elevator_healthy bool = true //Used to signal to network, the current elevator is not to be considered for new orders
-	state State = 0
-	// augmented_requests [elevator.N_FLOORS][elevator.N_BUTTONS]bool
-	// network_send_chan = make(chan StatusMessage)
-	// network_receive_status_chan = make(chan StatusMessage) //Unsure about the datatype of this channel
-	network_receive_order_chan = make(chan OrderDistributionMessage)
+	controller_id 		int
+	is_elevator_healthy bool  = true //Used to signal to network, the current elevator is not to be considered for new orders
+	state               State = 0
+	augmented_requests [elevator.N_FLOORS][elevator.N_BUTTONS]bool
+	network_send_chan = make(chan utilities.StatusMessage)
+	network_receive_status_chan = make(chan utilities.StatusMessage) //Unsure about the datatype of this channel
+	network_receive_order_chan = make(chan utilities.OrderDistributionMessage)
+	current_elevator 		  elevator.Elevator
 )
 
 const (
@@ -48,53 +31,42 @@ const (
 	state_disconnected
 )
 
-// func augment_request_array(elevator_service_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool, new_order elevio.ButtonEvent) [elevator.N_FLOORS][elevator.N_BUTTONS]bool {
-// 	augmented_requests = elevator_service_orders
-// 	augmented_requests[new_order.Floor][new_order.Button] = true
-// 	return augmented_requests
+func augment_request_array(elevator_service_orders [elevator.N_FLOORS][elevator.N_BUTTONS]bool, new_order elevio.ButtonEvent) [elevator.N_FLOORS][elevator.N_BUTTONS]bool {
+	augmented_requests := elevator_service_orders
+	augmented_requests[new_order.Floor][new_order.Button] = true
+	return augmented_requests
+}
 
-// }
-
-func extract_orderline(orderlines OrderDistributionMessage) [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool {
-	switch controller_id{
+func extract_orderline(orderlines utilities.OrderDistributionMessage) [elevator.N_FLOORS][elevator.N_BUTTONS - 1]bool {
+	switch controller_id {
 	case 0:
-		return orderlines.orderline0.new_hall_orders
+		return orderlines.Orderlines[0]
 	case 1:
-		return orderlines.orderline1.new_hall_orders
+		return orderlines.Orderlines[1]
 	case 2:
-		return orderlines.orderline2.new_hall_orders
+		return orderlines.Orderlines[2]
 	default:
 		panic("Controller ID is not a valid ID")
 	}
 }
 
-func TEMP_receive_network(network_receive_chan chan<- OrderDistributionMessage){
+func TEMP_receive_network(network_receive_chan chan<- utilities.OrderDistributionMessage) {
 	fmt.Println("Starting network receive function")
-	var new_order_list = OrderDistributionMessage{
-		orderline0: struct {
-			new_hall_orders [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool
-		}{
-			new_hall_orders: [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool{
+	var new_order_list = utilities.OrderDistributionMessage{
+		Orderlines: [3][elevator.N_FLOORS][elevator.N_BUTTONS - 1]bool{
+			{
 				{true, false},
 				{false, true},
 				{true, true},
 				{false, false},
 			},
-		},
-		orderline1: struct {
-			new_hall_orders [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool
-		}{
-			new_hall_orders: [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool{
+			{
 				{false, true},
 				{true, false},
 				{false, false},
 				{true, true},
 			},
-		},
-		orderline2: struct {
-			new_hall_orders [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool
-		}{
-			new_hall_orders: [elevator.N_FLOORS][elevator.N_BUTTONS-1]bool{
+			{
 				{true, true},
 				{false, false},
 				{true, false},
@@ -102,14 +74,15 @@ func TEMP_receive_network(network_receive_chan chan<- OrderDistributionMessage){
 			},
 		},
 	}
+	
 	timer_chan := make(chan bool)
 	go timer.Timer_start2(10, timer_chan)
 	fmt.Println("Starting network receive timer")
 	for {
 		select {
 		case <-timer_chan:
-			network_receive_chan<- new_order_list	
-			timer.Timer_start2(10, timer_chan)	
+			network_receive_chan <- new_order_list
+			go timer.Timer_start2(10, timer_chan)
 			fmt.Println("Starting network receive timer in loop")
 		}
 	}
@@ -119,12 +92,11 @@ func main_controller() {
 	/* Placeholder for network routines */
 	// go TEMP_transmit_network(network_send_chan)
 	go TEMP_receive_network(network_receive_order_chan)
-	controller_id = 0;
+	controller_id = 0
 	/* End of placeholder */
 
-
 	controller_state_machine(state)
-	
+
 }
 
 func controller_state_machine(state State) {
@@ -144,6 +116,8 @@ func normal_controller() {
 	for {
 		select {
 		case msg := <-elev_to_ctrl_chan:
+			current_elevator = msg
+		case msg := <-elev_to_ctrl_button_chan:
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
@@ -157,26 +131,17 @@ func normal_controller() {
 				fmt.Println("Elevator is healthy")
 				is_elevator_healthy = true
 
-			//TODO implement communication with network and arbitration before sending any orders to elevator
-
 			} else if new_order_button == elevio.BT_Cab {
 				if !is_elevator_healthy {
 					fmt.Println("Elevator is unhealthy, not sending order")
 					break
-				}	
+				}
 				ctrl_to_elev_chan <- new_order
 
-			// } else { //Sending to network
-			// 	if !is_elevator_healthy {
-			// 		fmt.Println("Elevator is unhealthy, not sending order")
-			// 		break
-			// 	}
-			// 	/* BELOW THIS LINE IS NOT WORKING, TEMPORARY PLACEHOLDER */
-			// 	augmented_requests = augment_request_array(elevator_service_orders, new_order);	
-			// 	status_message := StatusMessage{controller_id: 0, behaviour: "normal", floor: 2, direction: "up", node_orders: augmented_requests}
-			// 	network_send_chan <- status_message
-			// 	ctrl_to_elev_chan <- new_order
-			// 	/* END OF PLACEHOLDER */
+			} else { //Sending to network
+				augmented_requests = augment_request_array(current_elevator.Requests, new_order);
+				status_message := utilities.StatusMessage{Controller_id: 0, Behaviour: "normal", Floor: 2, Direction: "up", Node_orders: augmented_requests}
+				network_send_chan <- status_message
 			}
 		case msg := <-network_receive_order_chan:
 			new_orders := extract_orderline(msg)
@@ -189,7 +154,6 @@ func normal_controller() {
 					}
 				}
 			}
-
 		}
 	}
 }
@@ -204,7 +168,7 @@ func primary_controller() {}
 func disconnected_controller() {
 	for {
 		select {
-		case msg := <-elev_to_ctrl_chan:
+		case msg := <-elev_to_ctrl_button_chan:
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
@@ -221,7 +185,7 @@ func disconnected_controller() {
 				if !is_elevator_healthy {
 					fmt.Println("Elevator is not healthy, not sending order")
 					break
-				}				
+				}
 				new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
 				fmt.Println("Sending order to elevator")
 				ctrl_to_elev_chan <- new_order
@@ -234,4 +198,3 @@ func disconnected_controller() {
 	}
 
 }
-

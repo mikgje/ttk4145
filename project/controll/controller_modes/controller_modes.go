@@ -38,8 +38,8 @@ func base_controller(current_elevator* elevator.Elevator, controller_id int,
 					Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
 					
 					//fmt.Println("Sending new orders to network")
-					ctrl_to_network_chan <- status_message
-				}
+				ctrl_to_network_chan <- status_message
+			}
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/:
 			new_orders := controller_tools.Extract_orderline(controller_id, msg)
 			//fmt.Println("Received new orders from network")
@@ -100,6 +100,8 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 
 	for {
 		select {
+		// TODO: Function only runs assigner if other elevators have request orders? I.e. hall orders can be serviced by itself.
+		// M has temporarily changed other_elevators_status to be of size 3 and write_statuses to include local node.
 		case msg := <-other_elevators_status:
 			if (unhealty_elevators[msg.Controller_id] && (msg.Behaviour != elevator.EB_to_string[elevator.EB_Unhealthy])){
 				delete(unhealty_elevators, msg.Controller_id)
@@ -116,9 +118,25 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 			status_to_order_handler := make([]utilities.StatusMessage, 0, len(healthy_elevators_status))
 			
 			for _, status := range healthy_elevators_status{
+				switch status.Behaviour {
+					case "EB_idle":
+						status.Behaviour = "idle"
+					case "EB_doorOpen":
+						status.Behaviour = "doorOpen"
+					case "EB_moving":
+						status.Behaviour = "moving"
+				}
+				switch status.Direction {
+					case "MD_up":
+						status.Direction = "up"
+					case "MD_down":
+						status.Direction = "down"
+					case "MD_stop":
+						status.Direction = "stop"
+				}
 				status_to_order_handler = append(status_to_order_handler, status)
 			}
-		
+
 			ODM_to_network_chan <- order_handler.Order_handler(status_to_order_handler)
 
 		default:

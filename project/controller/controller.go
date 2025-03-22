@@ -33,7 +33,7 @@ var (
 	ctrl_to_network_chan                   	= make(chan utilities.StatusMessage, 1)
 	ODM_to_network_chan                    	= make(chan utilities.OrderDistributionMessage, 1)
 	bcast_sorders_chan                     	= make(chan utilities.OrderDistributionMessage, 1)
-	other_elevators_status_chan            	= make(chan utilities.StatusMessage, 2)
+	other_elevators_status_chan            	= make(chan utilities.StatusMessage, 3)
 	current_elevator       elevator.Elevator
 	controller_id          int
 	other_elevators_status = make(map[int]utilities.StatusMessage) //Map of other elevators based on ID

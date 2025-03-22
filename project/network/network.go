@@ -191,7 +191,7 @@ func p2p_interface(network* Network, id string, peerUpdateCh chan peers.PeerUpda
 func write_statuses(statuses [utilities.N_ELEVS]utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
 	if len(status_chan) == 0 {
 		// TODO: presumed that own ID is i = 0, since this will be used only(?) when master. Problem?
-		for i := 1; i < utilities.N_ELEVS; i++ {
+		for i := 0; i < utilities.N_ELEVS; i++ {
 			status_chan <- statuses[i]
 		}
 	}

@@ -1,6 +1,7 @@
-//package network_master
 package network
-
+//package main
+// FAILURE: REMEMBER TO CHANGE PORTS!
+// FAILURE: MAKE SURE THAT THERE AREN'T PROBLEMATIC SYNCHRONIZATION PROBLEMS BETWEEN READING MASTER IN NETWORK AND WRITING MASTER IN P2P
 import (
 	"Network-go/network/bcast"
 	"Network-go/network/localip"
@@ -15,26 +16,48 @@ import (
 	"strconv"
 )
 
-// TODO: implement extract_orderline functionality
-// TODO: implement network struct to shorten function calls
-// TODO: must use localIP at some point, since same PID can be assign on different nodes
+// NOT MY PROBLEM?: implement extract_orderline functionality
+// DONE: implement network struct to shorten function calls, with global accesses
+// DONE: must use localIP at some point, since same PID can be assign on different nodes
+// DONE?: make other status chan
+// DONE: make map
+// TODO: find out if its an issue with status message using ctrl_id of type int
+
+type Network struct {
+	Master 		bool
+	Connection	bool
+	// System interface
+	node_msg 	Node_msg
+	statuses 	[utilities.N_ELEVS]utilities.StatusMessage
+	N_nodes		int
+	// Peer-to-peer interface
+	id			string
+	nodes 		peers.PeerUpdate
+	others 		[]string
+}
 
 type Node_msg struct {
-	Label 		string
-	Target 		string
-	Dist_msg 	utilities.OrderDistributionMessage
-	Status_msg	utilities.StatusMessage
+	Label 	string
+	ODM 	utilities.OrderDistributionMessage
+	SM		utilities.StatusMessage
 }
 
+/*
 // For testing purposes
 func main() {
-	assign_chan := make(chan utilities.OrderDistributionMessage)
+	// Channel to receive service orders TODO: decide if there either should be a goroutine permanently writing/reading, or if the channel should be used with a buffer size 1
+	assign_chan := make(chan utilities.OrderDistributionMessage, 1)
+	// Channel to transmit service orders
 	bcast_sorders_chan := make(chan utilities.OrderDistributionMessage)
-	elevator_chan := make(chan utilities.StatusMessage)
+	// Channel to receive local elevator status
+	controller_chan := make(chan utilities.StatusMessage)
+	// Channel to transmit all statuses except local
+	status_chan := make(chan utilities.StatusMessage, utilities.N_ELEVS-1)
 
-	go Network(assign_chan, bcast_sorders_chan, elevator_chan)
+	go Network(assign_chan, bcast_sorders_chan, controller_chan, status_chan)
 	for {	
-		assign_chan <- utilities.OrderDistributionMessage{Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
+		select {
+		case assign_chan <- utilities.OrderDistributionMessage{Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
 			{	{true,false},
 				{false,true},
 				{true,true},
@@ -50,12 +73,16 @@ func main() {
 				{true,true},
 				{false,false},
 			},
-		}	}
-	
+		}	}:
+		default:
+		}
+		controller_chan <- utilities.StatusMessage{Controller_id : 5, Behaviour : "Dunno", Floor : 2, Direction : "UP", Node_orders : [utilities.N_FLOORS][utilities.N_BUTTONS]bool{}}
+		time.Sleep(3*time.Second)
 	}
 }
+*/
 
-func Network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, elevator_chan <-chan utilities.StatusMessage) {
+func Network_master(network* Network, assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, controller_chan <-chan utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -67,6 +94,7 @@ func Network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorder
 			localIP = "DISCONNECTED"
 		}
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+		network.id = construct_network_id(id)
 	}
 
 	peerUpdateCh := make(chan peers.PeerUpdate)
@@ -79,90 +107,104 @@ func Network(assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorder
 	go bcast.Transmitter(16569, node_tx)
 	go bcast.Receiver(16569, node_rx)
 
-	// Must be used as a pointer to have make updates inside of function affect outside scope
-	var master		bool
-	var master_msg  Node_msg = Node_msg{"M", "", utilities.OrderDistributionMessage{}, utilities.StatusMessage{}}
-	var node_msg 	Node_msg = Node_msg{id, "", utilities.OrderDistributionMessage{}, utilities.StatusMessage{}}
-	var inc_msg		Node_msg
 
 	// Network and rest of system interface
-	go network_interface(&master, id, node_tx, node_rx, &node_msg, &master_msg, &inc_msg, assign_chan, bcast_sorders_chan, elevator_chan)
-
-	var p 			peers.PeerUpdate
-	var others 		[]string
-	var other_id	[]string
+	go network_interface(network, node_tx, node_rx, assign_chan, bcast_sorders_chan, controller_chan, status_chan)
 
 	// P2P and master-slave interface
-	go p2p_interface(&master, id, peerUpdateCh, &p, others, other_id)
+	go p2p_interface(network, id, peerUpdateCh)
 
 	for {
-		fmt.Println("Sorted", sort_peers(p))
-		time.Sleep(time.Second)
 	}
 }
 
-// DONE: implement logic such that master loads the message with Dist_msg, all nodes loads Dist_msg into channel to be sent to controller.
+// DONE: implement logic such that master loads the message with ODM, all nodes loads ODM into channel to be sent to controller.
 // DONE: implement logic such that nodes only reads from master
-// TODO: implement logic to specify targets for order_assigner
-// TODO: implement logic to transmit status over network and locally through channels
-func network_interface(master* bool, id string, node_tx chan Node_msg, node_rx chan Node_msg, node_msg* Node_msg, master_msg* Node_msg, inc_msg* Node_msg, assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, elevator_chan <-chan utilities.StatusMessage) {
+// NOT RELEVANT: implement logic to specify targets for order_assigner
+// DONE: implement logic to transmit status over network and locally through channels
+func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Node_msg, assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, controller_chan <-chan utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
 	for {
 		// Only master
-		if *master {
-//			fmt.Println("Master", *master_msg)
+		if network.Master {
 			select {
 			case assign := <-assign_chan:
-				// TODO: specify target
-				master_msg.Target = id
-				master_msg.Dist_msg = assign
-				node_tx <- *master_msg
+				network.node_msg.ODM = assign
+				network.node_msg.Label = "O"
+				node_tx <- network.node_msg
+				network.node_msg.Label = ""
 			default:
 			}
-//			node_tx <- *node_msg
+			// TODO: A hasnt implemented status_chan yet, this will halt
+			write_statuses(network.statuses, status_chan)
 		}
 		// Everyone
 		select {
 		// Update the status if the elevator has sent a new status
-		case new_status := <- elevator_chan:
-			node_msg.Status_msg = new_status
-		case *inc_msg = <- node_rx:
-			// TODO: fix target specification
-			if (inc_msg.Label == "M") && (inc_msg.Target == id) {
-				node_msg.Dist_msg = inc_msg.Dist_msg
-//				fmt.Println("Master", inc_msg.Dist_msg)
-//				fmt.Println("Local ", node_msg.Dist_msg)
+		case new_status := <- controller_chan:
+			network.node_msg.SM = new_status
+			network.node_msg.Label = network.id
+			node_tx <- network.node_msg
+			network.node_msg.Label = ""
+		case received := <- node_rx:
+			fmt.Println(received)
+			if received.Label == "O" {
+				if !network.Master {
+					network.node_msg.ODM = received.ODM
+				}
+				// TODO: check if bcast should halt (not use a default)
+				select {
+				case bcast_sorders_chan <- network.node_msg.ODM:
+				default:
+				}
+			} else if ctrl_id, contains_label := sort_peers(network.nodes)[received.Label]; contains_label {
+				network.statuses[ctrl_id] = received.SM
 			}
-//			fmt.Println(*inc_msg)
-		case bcast_sorders_chan <- inc_msg.Dist_msg:
 		default:
 		}
-		node_tx <- *node_msg
-		time.Sleep(1 * time.Second)
+//		node_tx <- network.node_msg
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 // DONE: move node_rx to network_interface
-func p2p_interface(master* bool, id string, peerUpdateCh chan peers.PeerUpdate, p* peers.PeerUpdate, others []string, other_id []string) {
+func p2p_interface(network* Network, id string, peerUpdateCh chan peers.PeerUpdate) {
 	for {
-		other_id = p.Peers
-//		fmt.Println(others)
 		select {
-		case *p = <-peerUpdateCh:
-			other_id = p.Peers
-			others = find_others(*p, id)
-			*master = decide_master(find_pid(id),others)
+		case network.nodes = <-peerUpdateCh:
+			network.others = find_others(network.nodes, id)
+			network.Master = decide_master(network.id, network.others)
+			network.Connection = check_connection(network.nodes, id)
+			network.N_nodes = len(network.nodes.Peers)
 			fmt.Printf("Peer update:\n")
-			fmt.Printf("  Peers:    %q\n", p.Peers)
-			fmt.Printf("  New:      %q\n", p.New)
-			fmt.Printf("  Lost:     %q\n", p.Lost)	
+			fmt.Printf("  Peers:    %q\n", network.nodes.Peers)
+			fmt.Printf("  New:      %q\n", network.nodes.New)
+			fmt.Printf("  Lost:     %q\n", network.nodes.Lost)	
 		}
-//		fmt.Println("Master:", *master)
+	}
+}
+
+func write_statuses(statuses [utilities.N_ELEVS]utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
+	if len(status_chan) == 0 {
+		for i := 1; i < utilities.N_ELEVS; i++ {
+			status_chan <- statuses[i]
+		}
 	}
 }
 
 func find_pid(id string) string {
-	other_pid := string(id[strings.LastIndex(id, "-")+1:])
-	return other_pid
+	return string(id[strings.LastIndex(id, "-")+1:])
+}
+
+func find_last_octet(ip string) string {
+	return string(ip[strings.LastIndex(ip,".")+1:])
+}
+
+func construct_network_id (id string) string {
+	if strings.Contains(id, "DISCONNECTED") {
+		return find_pid(id)
+	} else {
+		return strings.ReplaceAll(find_last_octet(id), "-", "")
+	}
 }
 
 func find_others(p peers.PeerUpdate, id string) []string {
@@ -173,6 +215,15 @@ func find_others(p peers.PeerUpdate, id string) []string {
 		}
 	}
 	return others
+}
+
+func check_connection(p peers.PeerUpdate, id string) bool {
+	for _, element := range p.Lost {
+		if element == id {
+			return false
+		}
+	}
+	return true
 }
 
 func decide_master(pid string, others []string) bool {
@@ -191,17 +242,20 @@ func decide_master(pid string, others []string) bool {
 	}
 }
 
-// Function to be used by assigner to get have ids sorted by lowest to highest
-func sort_peers(p peers.PeerUpdate) []int {
+func sort_peers(p peers.PeerUpdate) map[string]int {
 	ids := p.Peers
-	nums := make([]int, len(ids))
-	for index, element := range ids {
-		num, err := strconv.Atoi(find_pid(element))
+	network_ids := make([]int, len(ids))
+	idm := make(map[string]int)
+	for i, id := range ids {
+		network_id, err := strconv.Atoi(construct_network_id(id))
 		if err != nil {
 			panic("Failed to convert str to int in sort_peers")
 		}
-		nums[index] = num
+		network_ids[i] = network_id
 	}
-	sort.Ints(nums)
-	return nums
+	sort.Ints(network_ids)
+	for i, network_id := range network_ids {
+		idm[strconv.Itoa(network_id)] = i
+	}
+	return idm
 }

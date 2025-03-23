@@ -81,7 +81,7 @@ func Start(obstruction_timer_duration int,
 				fsm.Fsm_on_door_timeout(door_timer_channel)
 			} else {
 				// fmt.Println("Starting timer again")
-				go timer.Timer_start2(3, door_timer_channel)
+				go timer.Timer_start(3, door_timer_channel)
 			}
 
 		case msg := <-ctrl_to_elev_chan:

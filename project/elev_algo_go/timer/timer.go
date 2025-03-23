@@ -7,12 +7,6 @@ import (
 var timer_end_time time.Time
 var timer_active int
 
-// Assuming duration is in seconds
-func Timer_start(duration float64) {
-	timer_end_time = time.Now().Add(time.Duration(duration * 1000000000))
-	timer_active = 1
-}
-
 func Timer_stop() {
 	timer_active = 0
 }
@@ -29,8 +23,7 @@ func Timer_timed_out() int {
 	}
 }
 
-// This is the timer used at the momement
-func Timer_start2(duration float64, trigger_channel chan<- bool) {
+func Timer_start(duration float64, trigger_channel chan<- bool) {
 	timer := time.NewTimer(time.Duration(duration) * time.Second)
 	println("Waiting for timer to fire")
 	<-timer.C

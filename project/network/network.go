@@ -240,7 +240,7 @@ func decide_master(pid string, others []string) bool {
 	var lowest_pid = pid
 	var element_pid string
 	for index := range(len(others)) {
-		element_pid = find_pid(others[index])
+		element_pid = construct_network_id(others[index])
 		if element_pid < lowest_pid {
 			lowest_pid = element_pid
 		}

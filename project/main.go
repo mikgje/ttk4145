@@ -22,10 +22,9 @@ var (
 )
 
 func main() {
-	debug := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
 
-	if *debug {
+	if *utilities.Debug {
 		fmt.Println("Debug mode enabled")
 		obstruction_timer_duration = 5
 	} else {

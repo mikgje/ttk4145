@@ -10,7 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
+	//"time"
 	"strings"
 	"sort"
 	"strconv"
@@ -99,13 +99,13 @@ func Network_master(network* Network, assign_chan <-chan utilities.OrderDistribu
 
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	go peers.Transmitter(*utilities.Peers, id, peerTxEnable)
+	go peers.Receiver(*utilities.Peers, peerUpdateCh)
 
 	node_tx := make(chan Node_msg)
 	node_rx := make(chan Node_msg)
-	go bcast.Transmitter(16569, node_tx)
-	go bcast.Receiver(16569, node_rx)
+	go bcast.Transmitter(*utilities.Bcast, node_tx)
+	go bcast.Receiver(*utilities.Bcast, node_rx)
 
 	initialize_statuses(network)
 
@@ -163,7 +163,7 @@ func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Nod
 		default:
 		}
 //		node_tx <- network.node_msg
-		time.Sleep(100 * time.Millisecond)
+		//time.Sleep(100 * time.Millisecond)
 	}
 }
 

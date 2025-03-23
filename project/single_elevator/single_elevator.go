@@ -23,7 +23,7 @@ func Start(obstruction_timer_duration int,
 	// elevio.SetStopLamp(false)
 	is_elevator_obstructed := false
 
-	elevio.Init("localhost:15657", utilities.N_FLOORS)
+	elevio.Init(fmt.Sprintf("localhost:%d", *utilities.Elevio), utilities.N_FLOORS)
 	fsm.Fsm_init()
 
 	if elevio.GetFloor() == -1 {

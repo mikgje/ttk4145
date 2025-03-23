@@ -66,7 +66,7 @@ func controller_state_machine(
 		switch state {
 		case utilities.State_slave:
 			fmt.Println("Starting normal controller")
-			controller_modes.Slave(&state, &current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, ODM_to_network_chan, net)
+			controller_modes.Slave(&state, &current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, net)
 		case utilities.State_master:
 			fmt.Println("Starting primary controller")
 			controller_modes.Master(&state, &current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, ODM_to_network_chan, other_elevators_status_chan, net)

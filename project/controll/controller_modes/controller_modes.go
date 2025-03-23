@@ -37,10 +37,11 @@ func base_controller(current_elevator* elevator.Elevator, controller_id int,
 				status_message := utilities.StatusMessage{Controller_id: controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 					Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
 					
-					//fmt.Println("Sending new orders to network")
+					// fmt.Println("Sending new orders to network")
 				ctrl_to_network_chan <- status_message
 			}
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/:
+			fmt.Println("Received new orders from network")
 			new_orders := controller_tools.Extract_orderline(controller_id, msg)
 			//fmt.Println("Received new orders from network")
 			ctrl_to_elev_chan <- new_orders
@@ -92,12 +93,15 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 	other_elevators_status <-chan utilities.StatusMessage,
 	net* network.Network) {
 
+	var alive_elevators = net.N_nodes
+
 	var healthy_elevators_status = make(map[int]utilities.StatusMessage)
 	var unhealty_elevators = make(map[int]bool)
 	var kill_base_ctrl_chan = make(chan bool)
-
+	var received_elevators = make([]string, alive_elevators)
+	
 	go base_controller(current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
-
+	
 	for {
 		select {
 		// TODO: Function only runs assigner if other elevators have request orders? I.e. hall orders can be serviced by itself.
@@ -136,15 +140,21 @@ func Master(state* utilities.State, current_elevator* elevator.Elevator, control
 				}
 				status_to_order_handler = append(status_to_order_handler, status)
 			}
-
-			ODM_to_network_chan <- order_handler.Order_handler(status_to_order_handler)
+			if len(status_to_order_handler) == len(received_elevators) {
+				ODM_to_network_chan <- order_handler.Order_handler(status_to_order_handler)
+			}
 
 		default:
-			if net.Connection {
+			if !net.Connection {
 				*state = utilities.State_disconnected
 				kill_base_ctrl_chan <- true
 				fmt.Println("Switching to disconnected mode")
 				return
+			}
+			if alive_elevators != net.N_nodes {
+				alive_elevators = net.N_nodes
+				received_elevators = make([]string, alive_elevators)
+				
 			}
 		}
 	}

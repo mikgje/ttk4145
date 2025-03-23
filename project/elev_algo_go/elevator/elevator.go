@@ -40,17 +40,17 @@ const (
 
 // map elevator behaviour to strings for printing
 var EB_to_string = map[ElevatorBehaviour]string{
-	EB_Idle:     "EB_idle",
-	EB_DoorOpen: "EB_doorOpen",
-	EB_Moving:   "EB_moving",
-	EB_Unhealthy: "EB_unhealthy",
+	EB_Idle:     "idle",
+	EB_DoorOpen: "doorOpen",
+	EB_Moving:   "moving",
+	EB_Unhealthy: "unhealthy",
 }
 
 // map elevator direction to strings
 var Dirn_to_string = map[elevio.MotorDirection]string{
-	elevio.MD_Up:   "MD_up",
-	elevio.MD_Down: "MD_down",
-	elevio.MD_Stop: "MD_stop",
+	elevio.MD_Up:   "up",
+	elevio.MD_Down: "down",
+	elevio.MD_Stop: "stop",
 }
 
 // map buttons to strings

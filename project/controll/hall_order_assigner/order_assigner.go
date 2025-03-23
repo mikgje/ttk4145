@@ -34,7 +34,7 @@ func assign_hall_requests(input map[string]interface{}) (map[string]interface{},
 		return nil, fmt.Errorf("error running hall_request_assigner: %v", err)
 	}
 
-	//fmt.Println("Raw output from hall_request_assigner:", output_buffer.String())
+	// fmt.Println("Raw output from hall_request_assigner:", output_buffer.String())
 
 	var output map[string]interface{}
 	// back to Go from JSON format

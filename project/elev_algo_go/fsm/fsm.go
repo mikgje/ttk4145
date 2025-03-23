@@ -15,12 +15,16 @@ func Fsm_return_elevator() elevator.Elevator {
 	return Elevator_cab
 }
 
-func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool){
+func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool, timer_channel chan<- bool) {
+	elevator.Clear_elevator_requests(&Elevator_cab)
 	for floor := 0; floor < utilities.N_FLOORS; floor++ {
 		for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
-			Elevator_cab.Requests[floor][btn] = orders[floor][btn]
+			if orders[floor][btn] {
+			Fsm_on_request_button_press(floor, elevio.ButtonType(btn), timer_channel)
+			}
 		}
 	}
+	elevator.Elevator_print(Elevator_cab)
 }
 
 func Fsm_init() {

@@ -8,7 +8,7 @@ import (
 	"main/elevio"
 	"main/utilities"
 
-	// "time"
+	"time"
 	"fmt"
 )
 
@@ -21,11 +21,9 @@ func Start(obstruction_timer_duration int,
 	ctrl_to_elev_cab_chan <-chan elevio.ButtonEvent) {
 
 	// elevio.SetStopLamp(false)
-	numFloors := 4
-
 	is_elevator_obstructed := false
 
-	elevio.Init("localhost:15657", numFloors)
+	elevio.Init("localhost:15657", utilities.N_FLOORS)
 	fsm.Fsm_init()
 
 	if elevio.GetFloor() == -1 {
@@ -43,16 +41,24 @@ func Start(obstruction_timer_duration int,
 	go elevio.PollFloorSensor(floor_channel)
 	go elevio.PollObstructionSwitch(obstruction_channel)
 
+	// Periodically update elevator to controller. 
+	// Can not be done as default in main loop, as this spins processor and delays other operations
+	//
+	go func(){
+		for {
+			elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
+			time.Sleep(utilities.Elevator_update_rate_ms)
+		}
+	}()
+	
+
 	for {
 		select {
 		case button := <-button_channel:
-			elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
 			elev_to_ctrl_button_chan <- button
-			// fsm.Fsm_on_request_button_press(button.Floor, button.Button, door_timer_channel)
 
 		case floor := <-floor_channel:
 			fsm.Fsm_on_floor_arrival(floor, door_timer_channel)
-			elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
 
 		case obstruction := <-obstruction_channel:
 			is_elevator_obstructed = obstruction
@@ -63,7 +69,6 @@ func Start(obstruction_timer_duration int,
 				if fsm.Elevator_cab.Behaviour == elevator.EB_Unhealthy { //Check if unhealthy and handle this only to prevent blocking in abort_timer_channel
 					fsm.Elevator_cab.Behaviour = elevator.EB_Idle
 					elevio.SetStopLamp(false)
-					elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
 				} else {
 					fmt.Println("Obstruction removed, stopping timer")
 					abort_timer_channel <- false
@@ -73,23 +78,18 @@ func Start(obstruction_timer_duration int,
 		case <-obstruction_timer_channel: //The obstruction timer has fired, the elevator is inoperable and communicates this to the controller
 			fsm.Elevator_cab.Behaviour = elevator.EB_Unhealthy
 			elevio.SetStopLamp(true)
-			elev_to_ctrl_chan <- fsm.Fsm_return_elevator()
-
+			
 		case <-door_timer_channel:
-			// fmt.Println("Status: ", is_elevator_healthy)
 			if !(is_elevator_obstructed) {
 				fsm.Fsm_on_door_timeout(door_timer_channel)
-			} else {
-				// fmt.Println("Starting timer again")
+				} else {
 				go timer.Timer_start(3, door_timer_channel)
 			}
-
+			
 		case msg := <-ctrl_to_elev_chan:
-			fsm.Fsm_overwrite_hall_orders(msg)
+			fsm.Fsm_overwrite_hall_orders(msg, door_timer_channel)
 		case msg := <-ctrl_to_elev_cab_chan:
 			fsm.Fsm_on_request_button_press(msg.Floor, msg.Button, door_timer_channel)
-		default:
-
 		}
 	}
 }

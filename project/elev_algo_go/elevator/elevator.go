@@ -85,6 +85,14 @@ func Elevator_uninitialised() Elevator {
 	return uninitialised_elevator
 }
 
+func Clear_elevator_requests(elevator *Elevator) {
+	for floor := 0; floor < utilities.N_FLOORS; floor++ {
+		for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
+			elevator.Requests[floor][btn] = false
+		}
+	}
+}
+
 // Prints all the stats of the elevator
 func Elevator_print(elevator Elevator) {
     stats := fmt.Sprintf("Floor: %d\nDirection: %s\nBehaviour: %s\nClear request variant: %s\nDoor open duration: %.1f\n",

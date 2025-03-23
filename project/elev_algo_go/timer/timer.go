@@ -25,11 +25,11 @@ func Timer_timed_out() int {
 
 func Timer_start(duration float64, trigger_channel chan<- bool) {
 	timer := time.NewTimer(time.Duration(duration) * time.Second)
-	println("Waiting for timer to fire")
+	// println("Waiting for timer to fire")
 	<-timer.C
 	trigger_channel <- true
 
-	println("Timer fired")
+	// println("Timer fired")
 }
 
 func Obstruction_timer(duration int, trigger_channel chan<- bool, abort chan bool) {

@@ -1,5 +1,9 @@
 package utilities
 
+import (
+	"time"
+)
+
 type StatusMessage struct {
 	Controller_id int
 	Behaviour     string
@@ -32,4 +36,8 @@ const (
 	Default_id			int 	= -1
 	Default_behaviour 	string 	= "idle"
 	Default_direction 	string 	= "stop"
+)
+
+const (
+	Elevator_update_rate_ms time.Duration = 100*time.Millisecond
 )

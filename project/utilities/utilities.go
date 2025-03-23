@@ -27,3 +27,9 @@ const (
 	N_BUTTONS 	int = 3
 	N_ELEVS 	int = 3
 )
+
+const (
+	Default_id			int 	= -1
+	Default_behaviour 	string 	= "idle"
+	Default_direction 	string 	= "stop"
+)

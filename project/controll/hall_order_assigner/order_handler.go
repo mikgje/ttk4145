@@ -164,7 +164,8 @@ func order_distribution_message(raw_output map[string]interface{}) (utilities.Or
 
 
 func Order_handler(statuses []utilities.StatusMessage) utilities.OrderDistributionMessage {
-	assigner_input := build_assigner_input_from_status_messages(statuses)
+	builder_input := incorporate_unhealthy_orders(statuses)
+	assigner_input := build_assigner_input_from_status_messages(builder_input)
 	assigner_outut, err := assign_hall_requests(assigner_input)
 	if err != nil {
 		fmt.Println(err)

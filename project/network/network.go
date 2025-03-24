@@ -43,47 +43,13 @@ type Node_msg struct {
 	SM		utilities.StatusMessage
 }
 
-/*
-// For testing purposes
-func main() {
-	// Channel to receive service orders TODO: decide if there either should be a goroutine permanently writing/reading, or if the channel should be used with a buffer size 1
-	assign_chan := make(chan utilities.OrderDistributionMessage, 1)
-	// Channel to transmit service orders
-	bcast_sorders_chan := make(chan utilities.OrderDistributionMessage)
-	// Channel to receive local elevator status
-	controller_chan := make(chan utilities.StatusMessage)
-	// Channel to transmit all statuses except local
-	status_chan := make(chan utilities.StatusMessage, utilities.N_ELEVS-1)
-
-	go Network(assign_chan, bcast_sorders_chan, controller_chan, status_chan)
-	for {	
-		select {
-		case assign_chan <- utilities.OrderDistributionMessage{Orderlines : [3][utilities.N_FLOORS][utilities.N_BUTTONS-1]bool{
-			{	{true,false},
-				{false,true},
-				{true,true},
-				{false,false},
-			},
-			{	{true,false},
-				{false,true},
-				{true,true},
-				{false,false},
-			},
-			{	{true,false},
-				{false,true},
-				{true,true},
-				{false,false},
-			},
-		}	}:
-		default:
-		}
-		controller_chan <- utilities.StatusMessage{Controller_id : 5, Behaviour : "Dunno", Floor : 2, Direction : "UP", Node_orders : [utilities.N_FLOORS][utilities.N_BUTTONS]bool{}}
-		time.Sleep(3*time.Second)
-	}
-}
-*/
-
-func Network_master(network* Network, assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, controller_chan <-chan utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
+func Network_master(
+	network* 			Network, 
+	assign_chan 		<-chan utilities.OrderDistributionMessage, 
+	bcast_sorders_chan 	chan<- utilities.OrderDistributionMessage, 
+	controller_chan 	<-chan utilities.StatusMessage, 
+	status_chan 		chan<- utilities.StatusMessage,
+) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -124,7 +90,15 @@ func Network_master(network* Network, assign_chan <-chan utilities.OrderDistribu
 // DONE: implement logic such that nodes only reads from master
 // NOT RELEVANT: implement logic to specify targets for order_assigner
 // DONE: implement logic to transmit status over network and locally through channels
-func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Node_msg, assign_chan <-chan utilities.OrderDistributionMessage, bcast_sorders_chan chan<- utilities.OrderDistributionMessage, controller_chan <-chan utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
+func network_interface(
+	network* Network, 
+	node_tx 			chan<- Node_msg, 
+	node_rx 			<-chan Node_msg, 
+	assign_chan 		<-chan utilities.OrderDistributionMessage, 
+	bcast_sorders_chan 	chan<- utilities.OrderDistributionMessage, 
+	controller_chan 	<-chan utilities.StatusMessage, 
+	status_chan 		chan<- utilities.StatusMessage,
+) {
 	for {
 		// Only master
 		if network.Master {
@@ -171,7 +145,11 @@ func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Nod
 }
 
 // DONE: move node_rx to network_interface
-func p2p_interface(network* Network, id string, peerUpdateCh chan peers.PeerUpdate) {
+func p2p_interface(
+	network* Network, 
+	id string, 
+	peerUpdateCh chan peers.PeerUpdate,
+) {
 	for {
 		select {
 		case network.nodes = <-peerUpdateCh:
@@ -198,7 +176,7 @@ func initialize_statuses(network* Network) {
 func write_statuses(statuses [utilities.N_ELEVS]utilities.StatusMessage, status_chan chan<- utilities.StatusMessage) {
 	if len(status_chan) == 0 {
 		// TODO: presumed that own ID is i = 0, since this will be used only(?) when master. Problem?
-		for i := 1; i < utilities.N_ELEVS; i++ {
+		for i := 0; i < utilities.N_ELEVS; i++ {
 			status_chan <- statuses[i]
 		}
 	}

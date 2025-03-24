@@ -1,7 +1,6 @@
 package fsm
 
 import (
-	"fmt"
 	"main/elev_algo_go/elevator"
 	"main/elev_algo_go/requests_elev"
 	"main/elev_algo_go/timer"
@@ -15,16 +14,16 @@ func Fsm_return_elevator() elevator.Elevator {
 	return Elevator_cab
 }
 
-func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool, timer_channel chan<- bool) {
+func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, timer_channel chan<- bool) {
 	elevator.Clear_elevator_requests(&Elevator_cab)
 	for floor := 0; floor < utilities.N_FLOORS; floor++ {
 		for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
 			if orders[floor][btn] {
-			Fsm_on_request_button_press(floor, elevio.ButtonType(btn), timer_channel)
+				Fsm_on_request_button_press(floor, elevio.ButtonType(btn), timer_channel)
 			}
 		}
 	}
-	elevator.Elevator_print(Elevator_cab)
+	// elevator.Elevator_print(Elevator_cab)
 }
 
 func Fsm_init() {
@@ -48,7 +47,7 @@ func Fsm_on_init_between_floors() {
 }
 
 func Fsm_on_request_button_press(btn_floor int, btn_type elevio.ButtonType, timer_channel chan<- bool) {
-	elevator.Elevator_print(Elevator_cab)
+	// elevator.Elevator_print(Elevator_cab)
 
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:
@@ -88,12 +87,12 @@ func Fsm_on_request_button_press(btn_floor int, btn_type elevio.ButtonType, time
 
 	Fsm_set_all_lights(Elevator_cab)
 
-	fmt.Println("\nNew state:")
-	elevator.Elevator_print(Elevator_cab)
+	// fmt.Println("\nNew state:")
+	// elevator.Elevator_print(Elevator_cab)
 }
 
 func Fsm_on_floor_arrival(new_floor int, timer_channel chan<- bool) {
-	elevator.Elevator_print(Elevator_cab)
+	// elevator.Elevator_print(Elevator_cab)
 	Elevator_cab.Floor = new_floor
 	// outputDevice.floorIndicator(Elevator_cab.Floor)
 	elevio.SetFloorIndicator(Elevator_cab.Floor)
@@ -115,12 +114,12 @@ func Fsm_on_floor_arrival(new_floor int, timer_channel chan<- bool) {
 		break
 	}
 
-	fmt.Println("\nNew state:")
-	elevator.Elevator_print(Elevator_cab)
+	// fmt.Println("\nNew state:")
+	// elevator.Elevator_print(Elevator_cab)
 }
 
 func Fsm_on_door_timeout(timer_channel chan<- bool) {
-	elevator.Elevator_print(Elevator_cab)
+	// elevator.Elevator_print(Elevator_cab)
 
 	elevio.SetDoorOpenLamp(false) // for å cleare lampen ved timeout
 
@@ -152,6 +151,6 @@ func Fsm_on_door_timeout(timer_channel chan<- bool) {
 		break
 	}
 
-	fmt.Print("\nNew state:")
-	elevator.Elevator_print(Elevator_cab)
+	// fmt.Print("\nNew state:")
+	// elevator.Elevator_print(Elevator_cab)
 }

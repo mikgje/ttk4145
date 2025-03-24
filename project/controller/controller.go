@@ -33,10 +33,8 @@ var (
 	ctrl_to_network_chan                   	= make(chan utilities.StatusMessage, 1)
 	ODM_to_network_chan                    	= make(chan utilities.OrderDistributionMessage, 1)
 	bcast_sorders_chan                     	= make(chan utilities.OrderDistributionMessage, 1)
-	other_elevators_status_chan            	= make(chan utilities.StatusMessage, 2)
+	other_elevators_status_chan            	= make(chan utilities.StatusMessage, 3)
 	current_elevator       elevator.Elevator
-	controller_id          int
-	other_elevators_status = make(map[int]utilities.StatusMessage) //Map of other elevators based on ID
 	net						network.Network
 )
 
@@ -66,13 +64,13 @@ func controller_state_machine(
 		switch state {
 		case utilities.State_slave:
 			fmt.Println("Starting normal controller")
-			controller_modes.Slave(&state, &current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, net)
+			controller_modes.Slave(&state, &current_elevator, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, net)
 		case utilities.State_master:
 			fmt.Println("Starting primary controller")
-			controller_modes.Master(&state, &current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, ODM_to_network_chan, other_elevators_status_chan, net)
+			controller_modes.Master(&state, &current_elevator, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, ODM_to_network_chan, other_elevators_status_chan, net)
 		case utilities.State_disconnected:
 			fmt.Println("Starting disconnected controller")
-			controller_modes.Disconnected(&state, &current_elevator, controller_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, net)
+			controller_modes.Disconnected(&state, &current_elevator, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, net)
 		}
 	}
 }

@@ -26,6 +26,7 @@ import (
 type Network struct {
 	Master 		bool
 	Connection	bool
+	Ctrl_id		int	
 	// System interface
 	node_msg 	Node_msg
 	statuses 	[utilities.N_ELEVS]utilities.StatusMessage
@@ -158,10 +159,12 @@ func network_interface(network* Network, node_tx chan Node_msg, node_rx chan Nod
 				default:
 				}
 			} else if ctrl_id, contains_label := sort_peers(network.nodes)[received.Label]; contains_label {
+				// TODO: Index error when elevators > 2
 				network.statuses[ctrl_id] = received.SM
 			}
 		default:
 		}
+		network.Ctrl_id = sort_peers(network.nodes)[network.id]
 //		node_tx <- network.node_msg
 		//time.Sleep(100 * time.Millisecond)
 	}

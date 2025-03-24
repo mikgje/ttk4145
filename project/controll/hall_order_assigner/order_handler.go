@@ -54,21 +54,21 @@ func build_assigner_input_from_status_messages(statuses []utilities.StatusMessag
 	states := make(map[string]interface{}) 
 
 	// based on the status of each elevator we create a map of all hall_requests and states
-	for _, s := range statuses {
+	for _, status := range statuses {
 		cab_requests := make([]bool, utilities.N_FLOORS)
 
 		for f := 0; f < utilities.N_FLOORS; f++ {
-			hall_requests[f][0] = hall_requests[f][0] || s.Node_orders[f][0]
-			hall_requests[f][1] = hall_requests[f][1] || s.Node_orders[f][1]
+			hall_requests[f][0] = hall_requests[f][0] || status.Node_orders[f][0]
+			hall_requests[f][1] = hall_requests[f][1] || status.Node_orders[f][1]
 			
-			cab_requests[f] = s.Node_orders[f][2]
+			cab_requests[f] = status.Node_orders[f][2]
 		}
 
-		key := fmt.Sprintf("%d", s.Controller_id)
+		key := fmt.Sprintf("%d", status.Controller_id)
 		states[key] = map[string]interface{}{
-			"behaviour":   s.Behaviour,
-			"floor":       s.Floor,
-			"direction":   s.Direction,
+			"behaviour":   status.Behaviour,
+			"floor":       status.Floor,
+			"direction":   status.Direction,
 			"cabRequests": cab_requests,
 		}
 	}

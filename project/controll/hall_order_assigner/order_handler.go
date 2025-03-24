@@ -12,6 +12,38 @@ import (
 )
 
 
+func incorporate_unhealthy_orders(statuses []utilities.StatusMessage) []utilities.StatusMessage {
+	var healthy_statuses []utilities.StatusMessage
+	// Bruker N_BUTTONS-1 for å ekskludere kabinkall (siste knapp antas å være cab call)
+	var aggregated_orders [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool
+
+	// Gå gjennom alle statusene og aggreger hall-orders fra de "unhealthy" statusene
+	for _, status := range statuses {
+		if status.Behaviour == "unhealthy" {
+			for floor := 0; floor < utilities.N_FLOORS; floor++ {
+				for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
+					aggregated_orders[floor][btn] = aggregated_orders[floor][btn] || status.Node_orders[floor][btn]
+				}
+			}
+		} else {
+			healthy_statuses = append(healthy_statuses, status)
+		}
+	}
+
+	// Legg de aggregerte hall-orders til den første gyldige (ikke-unhealthy) statusen
+	if len(healthy_statuses) > 0 {
+		for floor := 0; floor < utilities.N_FLOORS; floor++ {
+			for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
+				healthy_statuses[0].Node_orders[floor][btn] = healthy_statuses[0].Node_orders[floor][btn] || aggregated_orders[floor][btn]
+			}
+		}
+	}
+
+	return healthy_statuses
+}
+
+
+
 // This function builds an input for our order_assigner, so that the executable hall_request_assigner accepts it.
 // The input is a slice of StatusMessages from utilities (this input is yet to be made)
 func build_assigner_input_from_status_messages(statuses []utilities.StatusMessage) map[string]interface{} {

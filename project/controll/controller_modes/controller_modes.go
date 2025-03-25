@@ -29,35 +29,41 @@ func base_controller(
 		select {
 		case msg := <-elev_to_ctrl_chan:
 			*current_elevator = msg
-			// fmt.Println("Controller modes: ", *current_elevator)
 			*status_message = utilities.StatusMessage{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 		case msg := <-elev_to_ctrl_button_chan:
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
-			// fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
 			if new_order_button == elevio.BT_Cab {
 				ctrl_to_elev_cab_chan <- new_order
 			}
 			
 			augmented_requests = controller_tools.Augment_request_array(current_elevator.Requests, new_order)
 
-			// fmt.Println("Augmented requests: ", augmented_requests)
 			*status_message = utilities.StatusMessage{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
 
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/ :
-			// fmt.Println("New orders from network: ", msg)
 			new_orders := controller_tools.Extract_orderline(*controller_id, msg)
+			if *controller_id != 0 {
+				fmt.Println("New orders: ", new_orders)
+			}
+
+			for floor := 0; floor < utilities.N_FLOORS; floor++ {
+				for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
+					status_message.Node_orders[floor][btn] = new_orders[floor][btn]
+				}
+			}
+
 			other_orderlines := controller_tools.Extract_other_orderlines(*controller_id, msg)
-			// fmt.Println("Orders to execute: ", new_orders)
-			fmt.Println("Controller id: ", *controller_id)
 			ctrl_to_elev_chan <- utilities.ControllerToElevatorMessage{Orderline: new_orders, Other_orderlines: other_orderlines}
 		case <-kill_base_ctrl_chan:
 			return
 		}
-		ctrl_to_network_chan <- *status_message
+		if current_elevator.Floor != -1 {
+			ctrl_to_network_chan <- *status_message
+		}
 	}
 }
 
@@ -92,7 +98,6 @@ func Slave(
 					return
 				}
 				
-				// fmt.Println("--------------------", net.Ctrl_id, "--------------------")
 			}
 
 }
@@ -123,24 +128,39 @@ func Master(
 
 	for {
 		select {
-		// TODO: Add Remove_disconnected(lost_id int) function to remove disconnected elevators from connected_elevators_status map
+		// TODO: 
 
 		case msg := <-other_elevators_status:
-			if msg.Controller_id == utilities.Default_id {
-				continue
+
+			if msg.Controller_id != utilities.Default_id {
+				connected_elevators_status[msg.Controller_id] = msg
 			}
-			connected_elevators_status[msg.Controller_id] = msg
 
+			outer_loop:
+			for i := 0; i < utilities.N_ELEVS; i++ {
+				select{
+				case msg := <-other_elevators_status:
+					if msg.Controller_id != utilities.Default_id {
+						connected_elevators_status[msg.Controller_id] = msg
+					}
+				default:
+
+					break outer_loop
+				}
+			}	
 			status_to_order_handler := make([]utilities.StatusMessage, 0, len(connected_elevators_status))			
-
+			
 			for _, status := range connected_elevators_status {
 				status_to_order_handler = append(status_to_order_handler, status)
 			}
 			new_odm := order_handler.Order_handler(status_to_order_handler)
 			if new_odm != prev_odm {
-				fmt.Println("Sending new ODM to network")
+
 				ODM_to_network_chan <- new_odm
 				prev_odm = new_odm
+
+				// BREAK GLASS IN CASE OF EMEGENCY
+				controller_tools.Flush_status_messages(other_elevators_status)
 			}
 
 		case msg := <-dropped_peer_chan:
@@ -163,7 +183,6 @@ func Master(
 			fmt.Println("Switching to disconnected mode")
 			return
 		}
-		// fmt.Println("--------------------", net.Ctrl_id, "--------------------")
 	}
 }
 

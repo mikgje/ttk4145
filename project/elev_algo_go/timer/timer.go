@@ -23,15 +23,20 @@ func Timer_timed_out() int {
 	}
 }
 
-func Timer_start(duration float64, trigger_channel chan<- bool) {
+func Timer_start(duration float64, trigger_channel chan<- bool, kill_timer_channel chan bool) {
+	select {
+	case kill_timer_channel <- true:
+	default:
+	}
 	timer := time.NewTimer(time.Duration(duration) * time.Second)
-	// println("Waiting for timer to fire")
-	<-timer.C
-	trigger_channel <- true
-
-	// println("Timer fired")
+	select {
+	case <-timer.C:
+		trigger_channel <- true
+		return
+	case <-kill_timer_channel:
+		return
+	}
 }
-
 func Obstruction_timer(duration int, trigger_channel chan<- bool, abort chan bool) {
 	running := true
 	obstruction_timer := time.NewTimer(time.Duration(duration) * time.Second)

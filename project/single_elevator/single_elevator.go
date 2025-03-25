@@ -1,7 +1,6 @@
 package single_elevator
 
 import (
-	// "main/elev_algo_go/elevator"
 	"main/elev_algo_go/elevator"
 	"main/elev_algo_go/fsm"
 	"main/elev_algo_go/timer"
@@ -11,8 +10,6 @@ import (
 	"time"
 	"fmt"
 )
-
-var current_elevator elevator.Elevator
 
 func Start(obstruction_timer_duration int,
 	elev_to_ctrl_chan chan<- elevator.Elevator,
@@ -83,13 +80,12 @@ func Start(obstruction_timer_duration int,
 			if !(is_elevator_obstructed) {
 				fsm.Fsm_on_door_timeout(door_timer_channel)
 				} else {
-				go timer.Timer_start(3, door_timer_channel)
+				go timer.Timer_start(3, door_timer_channel, nil)
 			}
 			
 		case msg := <-ctrl_to_elev_chan:
 			fsm.Fsm_overwrite_hall_orders(msg.Orderline, door_timer_channel)
 			fsm.Fsm_set_other_orderlines(msg.Other_orderlines)
-			fmt.Println("Other orderlines: ", msg.Other_orderlines)
 		case msg := <-ctrl_to_elev_cab_chan:
 			fsm.Fsm_on_request_button_press(msg.Floor, msg.Button, door_timer_channel)
 		}

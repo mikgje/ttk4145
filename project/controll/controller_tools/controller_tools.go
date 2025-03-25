@@ -1,12 +1,12 @@
 package controller_tools
 
 import (
-	"main/utilities"
 	"main/elevio"
-
+	"main/utilities"
 	//FOR TESTING
 	// "fmt"
 )
+
 func Augment_request_array(elevator_service_orders [utilities.N_FLOORS][utilities.N_BUTTONS]bool, new_order elevio.ButtonEvent) [utilities.N_FLOORS][utilities.N_BUTTONS]bool {
 	augmented_requests := elevator_service_orders
 	augmented_requests[new_order.Floor][new_order.Button] = true
@@ -34,4 +34,11 @@ func Extract_other_orderlines(controller_id int, odm utilities.OrderDistribution
 		}
 	}
 	return other_orderlines
+}
+
+func Flush_status_messages(other_elevatos_status <-chan utilities.StatusMessage) {
+	for i := 0; i < 1000; i++ {
+		<-other_elevatos_status
+	}
+	// fmt.Println("Flushed status messages")
 }

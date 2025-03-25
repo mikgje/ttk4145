@@ -37,12 +37,19 @@ func Extract_other_orderlines(controller_id int, odm utilities.OrderDistribution
 	return other_orderlines
 }
 
-func update_confirmation(
-	button_confirmation	[utilities.N_ELEVS][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
+func Flush_status_messages(status_chan <-chan utilities.StatusMessage) {
+	for i := 0; i < 1000; i++ {
+		<-status_chan
+	}
+
+}
+
+func Update_confirmation(
+	button_confirmation	[][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
 	odm 				utilities.OrderDistributionMessage, 
 	statuses 			[]utilities.StatusMessage,
-) ([][][]bool, []bool) {
-	new_confirmation := make([][][]bool, 0)
+) ([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, []bool) {
+	new_confirmation := make([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, len(statuses))
 	node_confirmation := make([]bool, len(statuses))
 	for i := 0; i < len(statuses); i++ {
 		node_confirmation[i] = true
@@ -56,7 +63,7 @@ func update_confirmation(
 			}
 		}
 		new_confirmation[i][0][0] = true
-		new_confirmation[i][utilities.N_FLOORS][1] = true
+		new_confirmation[i][utilities.N_FLOORS-1][1] = true
 	}
 	return new_confirmation, node_confirmation
-:q
+}

@@ -61,6 +61,7 @@ func base_controller(
 		case <-kill_base_ctrl_chan:
 			return
 		}
+		//TODO: Fix order_handler error with unsupported floor
 		if current_elevator.Floor != -1 {
 			ctrl_to_network_chan <- *status_message
 		}
@@ -118,6 +119,8 @@ func Master(
 	) {
 
 	var prev_odm utilities.OrderDistributionMessage
+	var button_confirmations = make([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, 0, utilities.N_ELEVS)
+	var node_confirmations = make([]bool, 0, utilities.N_ELEVS)
 
 	var connected_elevators_status = make(map[int]utilities.StatusMessage)
 	var kill_base_ctrl_chan = make(chan bool)
@@ -147,17 +150,37 @@ func Master(
 
 					break outer_loop
 				}
-			}	
+			}
+			
+			status_slice := make([]utilities.StatusMessage, 0, len(connected_elevators_status))			
+			
+			for _, status := range connected_elevators_status {
+				status_slice = append(status_slice, status)
+
+			}
+			button_confirmations, node_confirmations = controller_tools.Update_confirmation(button_confirmations, prev_odm, status_slice)
+			
+
+
 			status_to_order_handler := make([]utilities.StatusMessage, 0, len(connected_elevators_status))			
 			
 			for _, status := range connected_elevators_status {
-				status_to_order_handler = append(status_to_order_handler, status)
+				if node_confirmations[status.Controller_id] {
+					status_to_order_handler = append(status_to_order_handler, status)
+				} else {
+					status.Behaviour = elevator.EB_to_string[elevator.EB_Unhealthy]
+					status_to_order_handler = append(status_to_order_handler, status)
+				}
 			}
 			new_odm := order_handler.Order_handler(status_to_order_handler)
 			if new_odm != prev_odm {
 
 				ODM_to_network_chan <- new_odm
-				prev_odm = new_odm
+				for  _, status := range connected_elevators_status {
+					if node_confirmations[status.Controller_id] {
+						prev_odm.Orderlines[status.Controller_id] = new_odm.Orderlines[status.Controller_id]
+					}
+				}
 
 				// BREAK GLASS IN CASE OF EMEGENCY
 				controller_tools.Flush_status_messages(other_elevators_status)

@@ -48,7 +48,12 @@ const (
 	Elevator_update_rate_ms time.Duration = 100*time.Millisecond
 )
 
+const (
+	Network_prefix string = "peer-G49"
+)
+
 var Debug	= flag.Bool("debug", false, "Enable debug mode")
+var Id		= flag.String("id", "", "Set id for node")
 var Elevio 	= flag.Int("elevio", 15657, "Set port used for elevio")
 var Peers 	= flag.Int("peers", 15647, "Set port used for peers")
 var Bcast 	= flag.Int("bcast", 16569, "Set port used for bcast")

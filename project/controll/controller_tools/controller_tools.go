@@ -1,8 +1,9 @@
 package controller_tools
 
 import (
-	"main/elevio"
 	"main/utilities"
+	"main/elevio"
+
 	//FOR TESTING
 	// "fmt"
 )
@@ -36,9 +37,26 @@ func Extract_other_orderlines(controller_id int, odm utilities.OrderDistribution
 	return other_orderlines
 }
 
-func Flush_status_messages(other_elevatos_status <-chan utilities.StatusMessage) {
-	for i := 0; i < 1000; i++ {
-		<-other_elevatos_status
+func update_confirmation(
+	button_confirmation	[utilities.N_ELEVS][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
+	odm 				utilities.OrderDistributionMessage, 
+	statuses 			[]utilities.StatusMessage,
+) ([][][]bool, []bool) {
+	new_confirmation := make([][][]bool, 0)
+	node_confirmation := make([]bool, len(statuses))
+	for i := 0; i < len(statuses); i++ {
+		node_confirmation[i] = true
+		for j := 0; j < utilities.N_FLOORS; j++ {
+			for k := 0; k < utilities.N_BUTTONS; k++ {
+				new_confirmation[i][j][k] = true
+				if odm.Orderlines[i][j][k] && !statuses[i].Node_orders[j][k] {
+					new_confirmation[i][j][k] = false
+				}
+				node_confirmation[i] = node_confirmation[i] && new_confirmation[i][j][k]
+			}
+		}
+		new_confirmation[i][0][0] = true
+		new_confirmation[i][utilities.N_FLOORS][1] = true
 	}
-	// fmt.Println("Flushed status messages")
-}
+	return new_confirmation, node_confirmation
+:q

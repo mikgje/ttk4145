@@ -10,13 +10,12 @@ import (
 	"main/elevio"
 	"main/single_elevator"
 	"main/utilities"
-	// "os"
 )
 
 var (
 	elev_to_ctrl_button_chan   = make(chan elevio.ButtonEvent)
 	elev_to_ctrl_chan          = make(chan elevator.Elevator, 1)
-	ctrl_to_elev_chan          = make(chan [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, 1)
+	ctrl_to_elev_chan          = make(chan utilities.ControllerToElevatorMessage, 1)
 	ctrl_to_elev_cab_chan      = make(chan elevio.ButtonEvent, 1)
 	obstruction_timer_duration int
 )

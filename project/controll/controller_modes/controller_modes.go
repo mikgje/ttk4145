@@ -16,7 +16,7 @@ func base_controller(
 	controller_id *int,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
 	network_to_ctrl_chan <-chan utilities.OrderDistributionMessage,
@@ -36,23 +36,24 @@ func base_controller(
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
-			fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
+			// fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
 			if new_order_button == elevio.BT_Cab {
 				ctrl_to_elev_cab_chan <- new_order
 			}
 			
 			augmented_requests = controller_tools.Augment_request_array(current_elevator.Requests, new_order)
 
-			fmt.Println("Augmented requests: ", augmented_requests)
+			// fmt.Println("Augmented requests: ", augmented_requests)
 			*status_message = utilities.StatusMessage{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
 
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/ :
-			fmt.Println("New orders from network: ", msg)
+			// fmt.Println("New orders from network: ", msg)
 			new_orders := controller_tools.Extract_orderline(*controller_id, msg)
+			other_orderlines := controller_tools.Extract_other_orderlines(*controller_id, msg)
 			// fmt.Println("Orders to execute: ", new_orders)
 			fmt.Println("Controller id: ", *controller_id)
-			ctrl_to_elev_chan <- new_orders
+			ctrl_to_elev_chan <- utilities.ControllerToElevatorMessage{Orderline: new_orders, Other_orderlines: other_orderlines}
 		case <-kill_base_ctrl_chan:
 			return
 		}
@@ -65,7 +66,7 @@ func Slave(
 	current_elevator *elevator.Elevator,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
 	network_to_ctrl_chan <-chan utilities.OrderDistributionMessage,
@@ -101,19 +102,19 @@ func Master(
 	current_elevator *elevator.Elevator,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
 	network_to_ctrl_chan <-chan utilities.OrderDistributionMessage,
 	ODM_to_network_chan chan<- utilities.OrderDistributionMessage,
 	other_elevators_status <-chan utilities.StatusMessage,
+	dropped_peer_chan <-chan utilities.StatusMessage,
 	net *network.Network,
 	) {
 
 	var prev_odm utilities.OrderDistributionMessage
 
-	var healthy_elevators_status = make(map[int]utilities.StatusMessage)
-	var unhealty_elevators = make(map[int]bool)
+	var connected_elevators_status = make(map[int]utilities.StatusMessage)
 	var kill_base_ctrl_chan = make(chan bool)
 	var status_message = utilities.StatusMessage{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
@@ -122,29 +123,17 @@ func Master(
 
 	for {
 		select {
-		// TODO: Function only runs assigner if other elevators have request orders? I.e. hall orders can be serviced by itself.
-		// M has temporarily changed other_elevators_status to be of size 3 and write_statuses to include local node.
+		// TODO: Add Remove_disconnected(lost_id int) function to remove disconnected elevators from connected_elevators_status map
+
 		case msg := <-other_elevators_status:
 			if msg.Controller_id == utilities.Default_id {
 				continue
 			}
-			if unhealty_elevators[msg.Controller_id] && (msg.Behaviour != elevator.EB_to_string[elevator.EB_Unhealthy]) {
-				delete(unhealty_elevators, msg.Controller_id)
-				healthy_elevators_status[msg.Controller_id] = msg
+			connected_elevators_status[msg.Controller_id] = msg
 
-			} else if msg.Behaviour == elevator.EB_to_string[elevator.EB_Unhealthy] {
-				unhealty_elevators[msg.Controller_id] = true
-				delete(healthy_elevators_status, msg.Controller_id)
+			status_to_order_handler := make([]utilities.StatusMessage, 0, len(connected_elevators_status))			
 
-			} else {
-				healthy_elevators_status[msg.Controller_id] = msg
-			}
-
-			status_to_order_handler := make([]utilities.StatusMessage, 0, len(healthy_elevators_status))
-			// status_to_order_handler = append(status_to_order_handler, status_message)
-			
-
-			for _, status := range healthy_elevators_status {
+			for _, status := range connected_elevators_status {
 				status_to_order_handler = append(status_to_order_handler, status)
 			}
 			new_odm := order_handler.Order_handler(status_to_order_handler)
@@ -153,6 +142,9 @@ func Master(
 				ODM_to_network_chan <- new_odm
 				prev_odm = new_odm
 			}
+
+		case msg := <-dropped_peer_chan:
+			delete(connected_elevators_status, msg.Controller_id)
 
 		default:
 			// status_to_order_handler := make([]utilities.StatusMessage, 0, 1)
@@ -180,7 +172,7 @@ func Disconnected(
 	current_elevator *elevator.Elevator,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.StatusMessage,
 	net *network.Network,

@@ -17,6 +17,11 @@ type OrderDistributionMessage struct {
 	Orderlines [N_ELEVS][N_FLOORS][N_BUTTONS - 1]bool
 }
 
+type ControllerToElevatorMessage struct {
+	Orderline [N_FLOORS][N_BUTTONS - 1]bool
+	Other_orderlines [][N_FLOORS][N_BUTTONS - 1]bool
+}
+
 type State int
 
 const (

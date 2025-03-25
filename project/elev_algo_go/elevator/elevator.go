@@ -16,6 +16,7 @@ type Elevator struct {
 	Floor     int
 	Dirn      elevio.MotorDirection
 	Requests  [utilities.N_FLOORS][utilities.N_BUTTONS]bool
+	Other_orderlines [][utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool
 	Behaviour ElevatorBehaviour
 
 	Config struct {

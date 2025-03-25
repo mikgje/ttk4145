@@ -18,16 +18,20 @@ func Augment_request_array(elevator_service_orders [utilities.N_FLOORS][utilitie
 	return augmented_requests
 }
 
-// TODO: make scalable
-func Extract_orderline(controller_id int, orderlines utilities.OrderDistributionMessage) [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
-	switch controller_id {
-	case 0:
-		return orderlines.Orderlines[0]
-	case 1:
-		return orderlines.Orderlines[1]
-	case 2:
-		return orderlines.Orderlines[2]
-	default:
-		panic("Controller ID is not a valid ID")
+func Extract_orderline(controller_id int, odm utilities.OrderDistributionMessage) [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
+	if controller_id < utilities.N_ELEVS {
+		return odm.Orderlines[controller_id]
+	} else {
+		panic("Controller id out of bounds")
 	}
+}
+
+func Extract_other_orderlines(controller_id int, odm utilities.OrderDistributionMessage) [][utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
+	other_orderlines := make([][utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, 0, utilities.N_ELEVS-1)
+	for i := 0; i < utilities.N_ELEVS; i++ {
+		if i != controller_id {
+			other_orderlines = append(other_orderlines, odm.Orderlines[i])
+		}
+	}
+	return other_orderlines
 }

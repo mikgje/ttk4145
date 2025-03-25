@@ -17,7 +17,7 @@ var current_elevator elevator.Elevator
 func Start(obstruction_timer_duration int,
 	elev_to_ctrl_chan chan<- elevator.Elevator,
 	elev_to_ctrl_button_chan chan<- elevio.ButtonEvent,
-	ctrl_to_elev_chan <-chan [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool,
+	ctrl_to_elev_chan <-chan utilities.ControllerToElevatorMessage,
 	ctrl_to_elev_cab_chan <-chan elevio.ButtonEvent) {
 
 	// elevio.SetStopLamp(false)
@@ -87,7 +87,9 @@ func Start(obstruction_timer_duration int,
 			}
 			
 		case msg := <-ctrl_to_elev_chan:
-			fsm.Fsm_overwrite_hall_orders(msg, door_timer_channel)
+			fsm.Fsm_overwrite_hall_orders(msg.Orderline, door_timer_channel)
+			fsm.Fsm_set_other_orderlines(msg.Other_orderlines)
+			fmt.Println("Other orderlines: ", msg.Other_orderlines)
 		case msg := <-ctrl_to_elev_cab_chan:
 			fsm.Fsm_on_request_button_press(msg.Floor, msg.Button, door_timer_channel)
 		}

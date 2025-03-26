@@ -105,10 +105,10 @@ func network_interface(
 		}
 
 		if network.lost_flag {
-			all_nodes := sort_peers(append(network.nodes, network.lost_id))
+			all_nodes := sort_peers(append(network.others, network.id, network.lost_id))
 			network.lost_status = network.statuses[all_nodes[network.lost_id]]
 		}
-		if len(send_lost_status) == 0 {
+		if len(send_lost_status) == 0 {
 			send_lost_status <- network.lost_status
 		}
 		select {
@@ -200,10 +200,15 @@ func p2p_interface(
 			network.Master = decide_master(network.id, network.others)
 			network.Connection = check_connection(peers, id)
 			network.N_nodes = len(network.nodes)
-			if network.lost != peers.Lost {
-				network.lost_flag = true
+			if len(peers.Lost) > 0 {
+				if network.lost_id != peers.Lost[0] {
+					network.lost_flag = true
+				}
+				network.lost_id = peers.Lost[0]
+			// TODO: check if below is necessary
+			} else {
+				network.lost_id = ""
 			}
-			network.lost = peers.Lost
 			fmt.Printf("Peer update:\n")
 			fmt.Printf("  Peers:    %q\n", peers.Peers)
 			fmt.Printf("  New:      %q\n", peers.New)

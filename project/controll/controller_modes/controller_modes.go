@@ -161,15 +161,16 @@ func Master(
 			button_confirmations, node_confirmations = controller_tools.Update_confirmation(button_confirmations, prev_odm, status_slice)
 			
 
-
 			status_to_order_handler := make([]utilities.StatusMessage, 0, len(connected_elevators_status))			
 			
 			for _, status := range connected_elevators_status {
-				if node_confirmations[status.Controller_id] {
-					status_to_order_handler = append(status_to_order_handler, status)
-				} else {
-					status.Behaviour = elevator.EB_to_string[elevator.EB_Unhealthy]
-					status_to_order_handler = append(status_to_order_handler, status)
+				if status.Controller_id < len(node_confirmations) {
+					if node_confirmations[status.Controller_id] {
+						status_to_order_handler = append(status_to_order_handler, status)
+					} else {
+						status.Behaviour = elevator.EB_to_string[elevator.EB_Unhealthy]
+						status_to_order_handler = append(status_to_order_handler, status)
+					}
 				}
 			}
 			new_odm := order_handler.Order_handler(status_to_order_handler)
@@ -183,7 +184,7 @@ func Master(
 				}
 
 				// BREAK GLASS IN CASE OF EMEGENCY
-				controller_tools.Flush_status_messages(other_elevators_status)
+//				controller_tools.Flush_status_messages(other_elevators_status)
 			}
 
 		case msg := <-dropped_peer_chan:

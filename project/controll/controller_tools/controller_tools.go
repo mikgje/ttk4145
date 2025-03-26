@@ -45,10 +45,13 @@ func Flush_status_messages(status_chan <-chan utilities.StatusMessage) {
 }
 
 func Update_confirmation(
-	button_confirmation	[][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
+	old_confirmation	[][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
 	odm 				utilities.OrderDistributionMessage, 
 	statuses 			[]utilities.StatusMessage,
-) ([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, []bool) {
+) (
+	[][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
+	[]bool,
+) {
 	new_confirmation := make([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, len(statuses))
 	node_confirmation := make([]bool, len(statuses))
 	for i := 0; i < len(statuses); i++ {
@@ -56,14 +59,18 @@ func Update_confirmation(
 		for j := 0; j < utilities.N_FLOORS; j++ {
 			for k := 0; k < utilities.N_BUTTONS; k++ {
 				new_confirmation[i][j][k] = true
-				if odm.Orderlines[i][j][k] && !statuses[i].Node_orders[j][k] {
+				if k < utilities.N_BUTTONS-1 && odm.Orderlines[i][j][k] && !statuses[i].Node_orders[j][k] {
 					new_confirmation[i][j][k] = false
 				}
+				if i < len(old_confirmation) {
+					new_confirmation[i][j][k] = old_confirmation[i][j][k] || new_confirmation[i][j][k]
+				}
+				// Quick fix
+				new_confirmation[i][0][0] = true
+				new_confirmation[i][utilities.N_FLOORS-1][1] = true
 				node_confirmation[i] = node_confirmation[i] && new_confirmation[i][j][k]
 			}
 		}
-		new_confirmation[i][0][0] = true
-		new_confirmation[i][utilities.N_FLOORS-1][1] = true
 	}
 	return new_confirmation, node_confirmation
 }

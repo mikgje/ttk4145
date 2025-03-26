@@ -20,14 +20,11 @@ type Network struct {
 	// System interface
 	node_msg 	Node_msg
 	statuses 	[utilities.N_ELEVS]utilities.StatusMessage
-	lost_status	utilities.StatusMessage
 	N_nodes		int
 	// Peer-to-peer interface
 	id			string
 	nodes 		map[string]int
 	others 		[]string
-	lost_id		string
-	lost_flag	bool
 }
 
 type Node_msg struct {
@@ -41,8 +38,7 @@ func Network_master(
 	orders_to_assign 	<-chan utilities.OrderDistributionMessage, 
 	assign_orders 		chan<- utilities.OrderDistributionMessage, 
 	elevator_status 	<-chan utilities.StatusMessage, 
-	elevator_statuses 	chan<- utilities.StatusMessage,
-	lost_status			chan<- utilities.StatusMessage,
+	elevator_statuses 		chan<- utilities.StatusMessage,
 ) {
 	var id string
 	id = *utilities.Id
@@ -72,7 +68,7 @@ func Network_master(
 	initialize_statuses(network)
 
 	// Network and rest of system interface
-	go network_interface(network, node_tx, node_rx, orders_to_assign, assign_orders, elevator_status, elevator_statuses, lost_status)
+	go network_interface(network, node_tx, node_rx, orders_to_assign, assign_orders, elevator_status, elevator_statuses)
 
 	// P2P and master-slave interface
 	go p2p_interface(network, id, peer_update)
@@ -89,7 +85,6 @@ func network_interface(
 	assign_orders 		chan<- utilities.OrderDistributionMessage, 
 	elevator_status 	<-chan utilities.StatusMessage, 
 	elevator_statuses 	chan<- utilities.StatusMessage,
-	send_lost_status	chan<- utilities.StatusMessage,
 ) {
 	for {
 		if network.Master {
@@ -104,13 +99,6 @@ func network_interface(
 			write_statuses(network.statuses, elevator_statuses)
 		}
 
-		if network.lost_flag {
-			all_nodes := sort_peers(append(network.others, network.id, network.lost_id))
-			network.lost_status = network.statuses[all_nodes[network.lost_id]]
-		}
-		if len(send_lost_status) == 0 {
-			send_lost_status <- network.lost_status
-		}
 		select {
 		case new_status := <- elevator_status:
 			network.node_msg.SM = new_status
@@ -133,6 +121,7 @@ func network_interface(
 			}
 		default:
 		}
+
 		network.Ctrl_id = network.nodes[network.id]
 	}
 }
@@ -200,15 +189,6 @@ func p2p_interface(
 			network.Master = decide_master(network.id, network.others)
 			network.Connection = check_connection(peers, id)
 			network.N_nodes = len(network.nodes)
-			if len(peers.Lost) > 0 {
-				if network.lost_id != peers.Lost[0] {
-					network.lost_flag = true
-				}
-				network.lost_id = peers.Lost[0]
-			// TODO: check if below is necessary
-			} else {
-				network.lost_id = ""
-			}
 			fmt.Printf("Peer update:\n")
 			fmt.Printf("  Peers:    %q\n", peers.Peers)
 			fmt.Printf("  New:      %q\n", peers.New)

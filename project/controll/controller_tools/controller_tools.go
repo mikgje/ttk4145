@@ -37,6 +37,12 @@ func Extract_other_orderlines(controller_id int, odm utilities.OrderDistribution
 	return other_orderlines
 }
 
+func Flush_status_messages(other_elevators_status_chan <-chan utilities.StatusMessage) {
+	for i := 0; i < 1000; i++ {
+		<-other_elevators_status_chan
+	}
+}
+
 func update_confirmation(
 	button_confirmation	[utilities.N_ELEVS][utilities.N_FLOORS][utilities.N_BUTTONS]bool,
 	odm 				utilities.OrderDistributionMessage, 
@@ -59,4 +65,4 @@ func update_confirmation(
 		new_confirmation[i][utilities.N_FLOORS][1] = true
 	}
 	return new_confirmation, node_confirmation
-:q
+}

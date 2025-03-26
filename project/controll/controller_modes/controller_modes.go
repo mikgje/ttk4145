@@ -180,12 +180,8 @@ func Master(
 			for i:=0; i<len(status_to_order_handler); i++ {
 				all_unhealthy = all_unhealthy && (status_to_order_handler[i].Behaviour == elevator.EB_to_string[elevator.EB_Unhealthy])
 			}
-			all_conf := true
-			for i:=0; i<len(node_confirmations); i++ {
-				all_conf = all_conf && node_confirmations[i]
-			}
 			//fmt.Println("AllUn", all_unhealthy)
-			if !all_unhealthy && all_conf {
+			if !all_unhealthy {
 			new_odm := order_handler.Order_handler(status_to_order_handler)
 			if new_odm != prev_odm {
 				fmt.Println("I am resetting")

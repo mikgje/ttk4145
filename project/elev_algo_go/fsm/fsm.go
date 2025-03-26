@@ -1,7 +1,6 @@
 package fsm
 
 import (
-	"fmt"
 	"main/elev_algo_go/elevator"
 	"main/elev_algo_go/requests_elev"
 	"main/elev_algo_go/timer"
@@ -30,6 +29,7 @@ func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS -
 
 func Fsm_init() {
 	Elevator_cab = elevator.Elevator_uninitialised()
+	Fsm_set_all_lights(Elevator_cab)
 }
 
 func Fsm_set_all_lights(es elevator.Elevator) {
@@ -70,11 +70,10 @@ func Fsm_on_init_between_floors() {
 func Fsm_on_request_button_press(btn_floor int, btn_type elevio.ButtonType, timer_channel chan<- bool) {
 	// elevator.Elevator_print(Elevator_cab)
 
-
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:
 		if requests_elev.Requests_should_clear_immediately(Elevator_cab, btn_floor, btn_type) {
-			fmt.Println("Starting timer")
+			// fmt.Println("Starting timer")
 			go timer.Timer_start(Elevator_cab.Config.DoorOpenDuration_s, timer_channel, kill_timer_channel)
 		} else {
 			Elevator_cab.Requests[btn_floor][btn_type] = true
@@ -93,7 +92,7 @@ func Fsm_on_request_button_press(btn_floor int, btn_type elevio.ButtonType, time
 		switch pair.Behaviour {
 		case elevator.EB_DoorOpen:
 			elevio.SetDoorOpenLamp(true)
-			fmt.Println("Starting timer case aent")
+			// fmt.Println("Starting timer case aent")
 			go timer.Timer_start(Elevator_cab.Config.DoorOpenDuration_s, timer_channel, kill_timer_channel)
 			Elevator_cab = requests_elev.Requests_clear_at_current_floor(Elevator_cab)
 			break
@@ -140,8 +139,6 @@ func Fsm_on_floor_arrival(new_floor int, timer_channel chan<- bool) {
 func Fsm_on_door_timeout(timer_channel chan<- bool) {
 	// elevator.Elevator_print(Elevator_cab)
 
-	elevio.SetDoorOpenLamp(false) // for å cleare lampen ved timeout
-
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:
 		pair := requests_elev.Requests_choose_direction(Elevator_cab)
@@ -155,6 +152,7 @@ func Fsm_on_door_timeout(timer_channel chan<- bool) {
 			Fsm_set_all_lights(Elevator_cab)
 			break
 		case elevator.EB_Moving:
+			elevio.SetDoorOpenLamp(false)
 			elevio.SetMotorDirection(Elevator_cab.Dirn)
 			break
 		case elevator.EB_Idle:

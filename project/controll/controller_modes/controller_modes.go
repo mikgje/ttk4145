@@ -158,10 +158,11 @@ func Master(
 				status_slice = append(status_slice, status)
 
 			}
+			//TODO: must be reset
 			button_confirmations, node_confirmations = controller_tools.Update_confirmation(button_confirmations, prev_odm, status_slice)
-			
+//			fmt.Println(button_confirmations)
 
-			status_to_order_handler := make([]utilities.StatusMessage, 0, len(connected_elevators_status))			
+			status_to_order_handler := make([]utilities.StatusMessage, 0, len(connected_elevators_status))
 			
 			for _, status := range connected_elevators_status {
 				if status.Controller_id < len(node_confirmations) {
@@ -173,8 +174,26 @@ func Master(
 					}
 				}
 			}
+			//fmt.Println("status_to_order_handler")
+			//fmt.Println(status_to_order_handler)
+			all_unhealthy := true
+			for i:=0; i<len(status_to_order_handler); i++ {
+				all_unhealthy = all_unhealthy && (status_to_order_handler[i].Behaviour == elevator.EB_to_string[elevator.EB_Unhealthy])
+			}
+			all_conf := true
+			for i:=0; i<len(node_confirmations); i++ {
+				all_conf = all_conf && node_confirmations[i]
+			}
+			//fmt.Println("AllUn", all_unhealthy)
+			if !all_unhealthy && all_conf {
 			new_odm := order_handler.Order_handler(status_to_order_handler)
 			if new_odm != prev_odm {
+				fmt.Println("I am resetting")
+//				fmt.Println(new_odm)
+//				fmt.Println("------------------------")
+//				fmt.Println(prev_odm)
+//				fmt.Println("------------------------")
+				button_confirmations = make([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, 0, utilities.N_ELEVS)
 
 				ODM_to_network_chan <- new_odm
 				for  _, status := range connected_elevators_status {
@@ -182,11 +201,10 @@ func Master(
 						prev_odm.Orderlines[status.Controller_id] = new_odm.Orderlines[status.Controller_id]
 					}
 				}
-
+			}
 				// BREAK GLASS IN CASE OF EMEGENCY
 //				controller_tools.Flush_status_messages(other_elevators_status)
 			}
-
 		case msg := <-dropped_peer_chan:
 			delete(connected_elevators_status, msg.Controller_id)
 

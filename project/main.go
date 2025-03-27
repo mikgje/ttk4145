@@ -28,7 +28,7 @@ func main() {
 		obstruction_timer_duration = 5
 	} else {
 		fmt.Println("Running in normal mode")
-		obstruction_timer_duration = 30
+		obstruction_timer_duration = 10
 	}
 
 	fmt.Println("Starting controller and elevetor")

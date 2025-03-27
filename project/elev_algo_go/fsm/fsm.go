@@ -7,7 +7,7 @@ import (
 	"main/elevio"
 	"main/utilities"
 
-	"fmt"
+	// "fmt"
 )
 
 var Elevator_cab elevator.Elevator
@@ -175,8 +175,6 @@ func Fsm_on_floor_arrival(new_floor int, timer_channel chan<- bool) {
 
 func Fsm_on_door_timeout(timer_channel chan<- bool) {
 	// elevator.Elevator_print(Elevator_cab)
-
-	elevio.SetDoorOpenLamp(false) // for å cleare lampen ved timeout
 
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:

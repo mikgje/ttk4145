@@ -154,9 +154,6 @@ func Master(
 	net *network.Network,
 ) {
 
-	// var button_confirmations = make([][utilities.N_FLOORS][utilities.N_BUTTONS]bool, 0, utilities.N_ELEVS)
-	// var node_confirmations = make([]bool, 0, utilities.N_ELEVS)
-	// var counter int = 0
 	var kill_base_ctrl_chan = make(chan bool)
 	var dropped_peer bool = false
 	var status_message = utilities.StatusMessage{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
@@ -166,7 +163,6 @@ func Master(
 
 	for {
 		select {
-		// TODO:
 
 		case msg := <-other_elevators_status_chan:
 
@@ -189,10 +185,6 @@ func Master(
 				}
 			}
 
-			// if dropped_peer && counter%100 == 0 {
-			// 	fmt.Println("Connected elevators status after collection: ", *connected_elevators_status)
-			// 	counter++
-			// }
 
 			status_slice := make([]utilities.StatusMessage, 0, len((*connected_elevators_status)))
 
@@ -200,22 +192,10 @@ func Master(
 				status_slice = append(status_slice, status)
 
 			}
-			// button_confirmations, node_confirmations = controller_tools.Update_confirmation(button_confirmations, *prev_odm, status_slice)
 
 			status_to_order_handler := make([]utilities.StatusMessage, 0, len((*connected_elevators_status)))
 			for _, status := range *connected_elevators_status {
-				if dropped_peer {
-					// fmt.Println("------------------------")
-					// fmt.Println("Status: ", status)
-				}
-				// if status.Controller_id < len(node_confirmations) {
-				// 	if node_confirmations[status.Controller_id] {
-				// 		status_to_order_handler = append(status_to_order_handler, status)
-				// 	} else {
-				// 		status.Behaviour = elevator.EB_to_string[elevator.EB_Unhealthy]
-				// 		status_to_order_handler = append(status_to_order_handler, status)
-				// 	}
-				// }
+
 				if status.Behaviour == elevator.EB_to_string[elevator.EB_Disconnected] {
 					// fmt.Println("Received disconnected elevator")
 					status.Behaviour = elevator.EB_to_string[elevator.EB_Unhealthy]
@@ -239,21 +219,12 @@ func Master(
 			} else {
 				new_odm = *prev_odm
 			}
-			if dropped_peer {
-				// fmt.Println("Status to order handler: ", status_to_order_handler)
-				// fmt.Println("\n\n\n")
-			}
 			if new_odm != *prev_odm {
 				fmt.Println("Status_to_order_handler: ", status_to_order_handler)
 				fmt.Println("New ODM: ", new_odm)
 				fmt.Println("Connected elevators status: ", *connected_elevators_status, "\n\n\n\n")
 
 				ODM_to_network_chan <- new_odm
-				// for  _, status := range (*connected_elevators_status) {
-				// 	if node_confirmations[status.Controller_id] {
-				// 		prev_odm.Orderlines[status.Controller_id] = new_odm.Orderlines[status.Controller_id]
-				// 	}
-				// }
 				*prev_odm = new_odm
 
 				// BREAK GLASS IN CASE OF EMEGENCY
@@ -272,17 +243,10 @@ func Master(
 			controller_tools.Flush_status_messages(other_elevators_status_chan)
 			fmt.Println("Disconnected peer status: ", disconnected_peer_status)
 			fmt.Println("Connected_elevators_status in dropped peer: ", *connected_elevators_status)
-			// fmt.Println("Master id: ", net.Ctrl_id)
-			// (*all_elevators_status)[msg.Controller_id] = disconnected_peer_status
-			//TODO: Expose reconnected peer to master, make the channel UNbuffered(?).
-		// case msg := <-peer_reconnect_chan:
-		// cab_calls_to_network_chan <- Extract_cabcalls(all_elevators_status[msg.Controller_id])
+
 
 		default:
-			// if dropped_peer && counter%100 == 0 {
-			// 	fmt.Println("Connected elevators status after collection: ", *connected_elevators_status)
-			// 	counter++
-			// }
+
 		}
 		if !net.Connection {
 			*state = utilities.State_disconnected

@@ -90,7 +90,9 @@ func Run_single_elevator(
 			if msg.Label == elevator.EB_to_string[elevator.EB_Disconnected] {
 				for floor := 0; floor < utilities.N_FLOORS; floor++ {
 					for button := 0; button < utilities.N_BUTTONS-1; button++ {
-						fsm.On_request_button_press(floor, elevio.ButtonType(button), door_timer_chan)
+						if msg.Orderline[floor][button] {
+							fsm.On_request_button_press(floor, elevio.ButtonType(button), door_timer_chan)
+						}
 					}
 				}
 			} else {

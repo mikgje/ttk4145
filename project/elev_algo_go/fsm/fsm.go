@@ -7,7 +7,7 @@ import (
 	"main/elevio"
 	"main/utilities"
 
-	// "fmt"
+	"fmt"
 )
 
 var Elevator_cab elevator.Elevator
@@ -35,8 +35,8 @@ func Fsm_init() {
 	if err := utilities.Load_cab_calls(&Elevator_cab.Requests, elevio.BT_Cab, utilities.Cab_calls_file_name); err != nil {
 		fmt.Println("Load error:", err)
 	}
-	
 	Fsm_set_all_lights(Elevator_cab)
+	elevio.SetDoorOpenLamp(false)
 }
 
 func Fsm_set_all_lights(es elevator.Elevator) {
@@ -162,6 +162,12 @@ func Fsm_on_floor_arrival(new_floor int, timer_channel chan<- bool) {
             Fsm_set_all_lights(Elevator_cab)
             Elevator_cab.Behaviour = elevator.EB_DoorOpen
         }
+	case elevator.EB_Idle:
+		elevio.SetDoorOpenLamp(true)
+		Elevator_cab = requests_elev.Requests_clear_at_current_floor(Elevator_cab)
+		go timer.Timer_start(Elevator_cab.Config.DoorOpenDuration_s, timer_channel, kill_timer_channel)
+		Fsm_set_all_lights(Elevator_cab)
+		Elevator_cab.Behaviour = elevator.EB_DoorOpen
     default:
         // No-op for other states
     }

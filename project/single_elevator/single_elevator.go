@@ -19,20 +19,22 @@ func Start(obstruction_timer_duration int,
 
 	// elevio.SetStopLamp(false)
 	is_elevator_obstructed := false
-
-	elevio.Init(fmt.Sprintf("localhost:%d", *utilities.Elevio), utilities.N_FLOORS)
-	fsm.Fsm_init()
-
-	if elevio.GetFloor() == -1 {
-		fsm.Fsm_on_init_between_floors()
-	}
-
 	floor_channel := make(chan int)
 	button_channel := make(chan elevio.ButtonEvent)
 	obstruction_channel := make(chan bool)
 	door_timer_channel := make(chan bool)
 	obstruction_timer_channel := make(chan bool)
 	abort_timer_channel := make(chan bool)
+
+	elevio.Init(fmt.Sprintf("localhost:%d", *utilities.Elevio), utilities.N_FLOORS)
+	fsm.Fsm_init()
+
+	if elevio.GetFloor() == -1 {
+		fsm.Fsm_on_init_between_floors()
+	} else {
+		fsm.Fsm_on_floor_arrival(elevio.GetFloor(), door_timer_channel)
+	}
+
 
 	go elevio.PollButtons(button_channel)
 	go elevio.PollFloorSensor(floor_channel)

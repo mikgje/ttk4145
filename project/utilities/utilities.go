@@ -64,7 +64,7 @@ var Bcast 	= flag.Int("bcast", 16569, "Set port used for bcast")
 
 /*======================================== Save and load from disk functions ========================================*/
 
-// const Cab_calls_file_name = "cab_calls.json"
+const Cab_calls_file_name = "cab_calls.json"
 
 func Save_cab_calls(requests [N_FLOORS][N_BUTTONS]bool, column int, file_name string) error {
 	cab_calls := make([]bool, len(requests))

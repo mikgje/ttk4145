@@ -227,6 +227,10 @@ func Master(
 				ODM_to_network_chan <- new_odm
 				*prev_odm = new_odm
 
+				for i := 0; i < 50; i++ {
+					ODM_to_network_chan <- new_odm
+				}
+
 				// BREAK GLASS IN CASE OF EMEGENCY
 				controller_tools.Flush_status_messages(other_elevators_status_chan)
 				dropped_peer = false

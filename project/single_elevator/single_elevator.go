@@ -87,8 +87,16 @@ func Run_single_elevator(
 				go timer.Timer_start(3, door_timer_chan, nil)
 			}
 		case msg := <-hall_orders_chan:
-			fsm.Overwrite_hall_orders(msg.Orderline, door_timer_chan)
-			fsm.Set_other_orderlines(msg.Other_orderlines)
+			if msg.Label == elevator.EB_to_string[elevator.EB_Disconnected] {
+				for floor := 0; floor < utilities.N_FLOORS; floor++ {
+					for button := 0; button < utilities.N_BUTTONS-1; button++ {
+						fsm.On_request_button_press(floor, elevio.ButtonType(button), door_timer_chan)
+					}
+				}
+			} else {
+				fsm.Overwrite_hall_orders(msg.Orderline, door_timer_chan)
+				fsm.Set_other_orderlines(msg.Other_orderlines)
+			}
 		case msg := <-cab_orders_chan:
 			fsm.On_request_button_press(msg.Floor, msg.Button, door_timer_chan)
 		}

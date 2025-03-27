@@ -171,7 +171,7 @@ func Order_handler(statuses []utilities.StatusMessage) utilities.OrderDistributi
 		fmt.Println(err)
 		return utilities.OrderDistributionMessage{}
 	}
-	ODM, err := order_distribution_message(assigner_outut)
+	ODM, err := order_distribution_message(assigner_output)
 	if err != nil {
 		fmt.Println(err)
 		return utilities.OrderDistributionMessage{}

@@ -198,7 +198,7 @@ func Master(
 
 				if status.Behaviour == elevator.EB_to_string[elevator.EB_Disconnected] {
 					// fmt.Println("Received disconnected elevator")
-					status.Behaviour = elevator.EB_to_string[elevator.EB_Unhealthy]
+					status.Behaviour = elevator.EB_to_string[elevator.EB_Obstructed]
 					status_to_order_handler = append(status_to_order_handler, status)
 					// fmt.Println("Connected_elevators_status before delete: ", *connected_elevators_status)
 					delete((*connected_elevators_status), status.Controller_id)

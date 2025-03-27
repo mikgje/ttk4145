@@ -8,7 +8,7 @@ import (
 
 type DirnBehaviourPair struct {
 	Dirn      elevio.MotorDirection
-	Behaviour elevator.ElevatorBehaviour
+	Behaviour elevator.Elevator_behaviour
 }
 
 func requestsAbove(e elevator.Elevator) bool {
@@ -101,7 +101,7 @@ func Requests_should_stop(e elevator.Elevator) bool {
 }
 
 func Requests_should_clear_immediately(e elevator.Elevator, btnFloor int, btnType elevio.ButtonType) bool {
-	switch e.Config.ClearRequestVariant {
+	switch e.Config.Clear_request_variant {
 	case elevator.CV_All:
 		return e.Floor == btnFloor
 
@@ -117,7 +117,7 @@ func Requests_should_clear_immediately(e elevator.Elevator, btnFloor int, btnTyp
 }
 
 func Requests_clear_at_current_floor(e elevator.Elevator) elevator.Elevator {
-	switch e.Config.ClearRequestVariant {
+	switch e.Config.Clear_request_variant {
 	case elevator.CV_All:
 		for btn := 0; btn < utilities.N_BUTTONS; btn++ {
 			e.Requests[e.Floor][btn] = false

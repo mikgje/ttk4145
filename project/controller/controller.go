@@ -36,7 +36,7 @@ var (
 	dropped_peer_chan                             = make(chan utilities.StatusMessage, 1)
 	cab_call_from_network_chan 					  = make(chan [utilities.N_FLOORS]bool, 1)
 	other_elevators_status_chan                   = make(chan utilities.StatusMessage, utilities.N_ELEVS)
-	current_elevator            elevator.Elevator = elevator.Elevator_uninitialised()
+	current_elevator            elevator.Elevator = elevator.Uninitialised_elevator()
 	net                         network.Network
 	just_booted				 	bool
 	has_ever_connected 			bool

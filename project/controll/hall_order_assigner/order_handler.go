@@ -2,13 +2,13 @@ package order_handler
 
 import (
 	"fmt"
+	"main/elev_algo_go/elevator"
 	"main/utilities"
 
 	"bytes"
 	"encoding/json"
 	"os/exec"
 	"strconv"
-
 )
 
 
@@ -19,7 +19,7 @@ func incorporate_unhealthy_orders(statuses []utilities.StatusMessage) []utilitie
 
 	// vi går gjennom alle statusene og aggreger hall-orders fra de "unhealthy" statusene
 	for _, status := range statuses {
-		if status.Behaviour == "unhealthy" {
+		if status.Behaviour == elevator.EB_to_string[elevator.EB_Obstructed] {
 			for floor := 0; floor < utilities.N_FLOORS; floor++ {
 				for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
 					aggregated_orders[floor][btn] = aggregated_orders[floor][btn] || status.Node_orders[floor][btn]

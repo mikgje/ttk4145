@@ -292,7 +292,9 @@ func Disconnected(
 			if new_order_button == elevio.BT_Cab {
 				ctrl_to_elev_cab_chan <- new_order
 			} else {
-				fmt.Println("Disconnected, cannot send orders to network")
+				var orderline [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool
+				orderline[new_order_floor][new_order_button] = true
+				ctrl_to_elev_chan <- utilities.ControllerToElevatorMessage{Orderline: orderline}
 			}
 		default:
 			if net.Connection {

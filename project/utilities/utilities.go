@@ -2,7 +2,6 @@ package utilities
 
 import (
 	"flag"
-	"main/utilities"
 	"time"
 
 	"encoding/json"
@@ -67,21 +66,21 @@ var Bcast 	= flag.Int("bcast", 16569, "Set port used for bcast")
 
 const Cab_calls_file_name = "cab_calls.json"
 
-
-func Save_cab_calls(requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool, column int, file_name string) error {
+func Save_cab_calls(requests [N_FLOORS][N_BUTTONS]bool, column int, file_name string) error {
 	cab_calls := make([]bool, len(requests))
 	for i, row := range requests {
 		cab_calls[i] = row[column]
 	}
+
 	data, err := json.Marshal(cab_calls)
 	if err != nil {
 		return err
 	}
+
 	return os.WriteFile(file_name, data, 0644)
 }
 
-
-func Load_cab_calls(requests *[utilities.N_FLOORS][utilities.N_BUTTONS]bool, column int, file_name string) error {
+func Load_cab_calls(requests *[N_FLOORS][N_BUTTONS]bool, column int, file_name string) error {
 	data, err := os.ReadFile(file_name)
 	if err != nil {
 		return err
@@ -94,11 +93,7 @@ func Load_cab_calls(requests *[utilities.N_FLOORS][utilities.N_BUTTONS]bool, col
 
 	for i, cab_call := range cab_calls {
 		requests[i][column] = cab_call
-	
 	}
+
 	return nil
 }
-
-// hvordan vi kan kjøre dem fsm 
-// err := Save_cab_calls(Elevator_cab.Requests, elevio.BT_Cab, utilities.CabCallsFileName)
-// err := Load_cab_calls(&Elevator_cab.Requests, elevio.BT_Cab, utilities.CabCallsFileName)

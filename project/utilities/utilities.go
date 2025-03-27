@@ -21,6 +21,7 @@ type OrderDistributionMessage struct {
 }
 
 type ControllerToElevatorMessage struct {
+	Label 			 string
 	Orderline        [N_FLOORS][N_BUTTONS - 1]bool
 	Other_orderlines [][N_FLOORS][N_BUTTONS - 1]bool
 }

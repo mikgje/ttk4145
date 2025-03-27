@@ -294,7 +294,7 @@ func Disconnected(
 			} else {
 				var orderline [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool
 				orderline[new_order_floor][new_order_button] = true
-				ctrl_to_elev_chan <- utilities.ControllerToElevatorMessage{Orderline: orderline}
+				ctrl_to_elev_chan <- utilities.ControllerToElevatorMessage{Label: elevator.EB_to_string[elevator.EB_Disconnected], Orderline: orderline}
 			}
 		default:
 			if net.Connection {

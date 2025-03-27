@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	button_event_chan    = make(chan elevio.ButtonEvent)
 	elevator_status_chan = make(chan elevator.Elevator, 1)
-	hall_orders_chan = make(chan utilities.ControllerToElevatorMessage, 1)
+	button_event_chan    = make(chan elevio.ButtonEvent)
+	hall_orders_chan = make(chan utilities.Controller_to_elevator_message, 1)
 	cab_orders_chan   = make(chan elevio.ButtonEvent, 1)
 )
 
@@ -24,7 +24,7 @@ func main() {
 
 	fmt.Println("Starting controller and elevetor")
 
-	go controller.Start(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan)
+	go controller.Run_controller(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan)
 	go single_elevator.Run_single_elevator(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan)
 	for {}
 }

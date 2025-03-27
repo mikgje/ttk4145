@@ -11,7 +11,7 @@ func Augment_request_array(elevator_service_orders [utilities.N_FLOORS][utilitie
 	return augmented_requests
 }
 
-func Extract_orderline(controller_id int, odm utilities.OrderDistributionMessage) [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
+func Extract_orderline(controller_id int, odm utilities.Order_distribution_message) [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
 	if controller_id < utilities.N_ELEVS {
 		return odm.Orderlines[controller_id]
 	} else {
@@ -19,7 +19,7 @@ func Extract_orderline(controller_id int, odm utilities.OrderDistributionMessage
 	}
 }
 
-func Extract_other_orderlines(controller_id int, odm utilities.OrderDistributionMessage) [][utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
+func Extract_other_orderlines(controller_id int, odm utilities.Order_distribution_message) [][utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool {
 	other_orderlines := make([][utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, 0, utilities.N_ELEVS-1)
 	for i := 0; i < utilities.N_ELEVS; i++ {
 		if i != controller_id {
@@ -29,7 +29,7 @@ func Extract_other_orderlines(controller_id int, odm utilities.OrderDistribution
 	return other_orderlines
 }
 
-func Flush_status_messages(status_chan <-chan utilities.StatusMessage) {
+func Flush_status_messages(status_chan <-chan utilities.Status_message) {
 	for i := 0; i < 1000; i++ {
 		<-status_chan
 	}

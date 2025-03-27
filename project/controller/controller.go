@@ -2,21 +2,20 @@ package controller
 
 /*-------------------------------------*/
 // INPUT:
-// Elevator copy
-// Request orders from elevator
-// ODM from network
-// Master status from network
-// Controller ID from network
-// IF master: other node status messages
+// elevator_status_chan: Elevator status from local elevator
+// button_event_chan: Button events from local elevator
+// send_orders_chan: Service orders from network
+// *net: Network struct containing master status for local controller, connectivity, number of nodes on network, controller ID.
+// node_statuses_chan: Status messages from all controllers on network
 /*-------------------------------------*/
 // OUTPUT:
-// Service orders to the elevator
-// Status to network
-// IF master: ODM to network
-// IF master: other node status messages to order assigner
+// hall_orders_chan: Hall orders to local elevator
+// cab_orders_chan: Cab orders to local elevator
+// node_status_chan: Status messages to network from local controller
+// IF master: service_orders_chan: Order distribution message to network from local controller
 /*-------------------------------------*/
 
-// Interface between controller network and elevator
+// Interface between network and elevator
 import (
 	"fmt"
 	"main/controller/controller_modes"
@@ -24,56 +23,53 @@ import (
 	"main/elevio"
 	"main/network"
 	"main/utilities"
-	//For testing
 )
 
 var (
-	state                       utilities.State   = utilities.State_slave
-	prev_odm 					utilities.OrderDistributionMessage
-	ctrl_to_network_chan                          = make(chan utilities.StatusMessage, 1)
-	ODM_to_network_chan                           = make(chan utilities.OrderDistributionMessage, 1)
-	bcast_sorders_chan                            = make(chan utilities.OrderDistributionMessage, 1)
-	dropped_peer_chan                             = make(chan utilities.StatusMessage, 1)
-	cab_call_from_network_chan 					  = make(chan [utilities.N_FLOORS]bool, 1)
-	other_elevators_status_chan                   = make(chan utilities.StatusMessage, utilities.N_ELEVS)
+	state                       utilities.State = utilities.State_slave
+	prev_odm                    utilities.Order_distribution_message
 	current_elevator            elevator.Elevator = elevator.Uninitialised_elevator()
 	net                         network.Network
-	just_booted				 	bool
-	has_ever_connected 			bool
-	connected_elevators_status = make(map[int]utilities.StatusMessage)
+	just_booted                 bool
+	has_ever_connected          bool
+	connected_elevators_status  = make(map[int]utilities.Status_message)
+	
+	node_status_chan        	= make(chan utilities.Status_message, 1)
+	service_orders_chan         = make(chan utilities.Order_distribution_message, 1)
+	send_orders_chan          	= make(chan utilities.Order_distribution_message, 1)
+	dropped_peer_chan           = make(chan utilities.Status_message, 1)
+	node_statuses_chan			= make(chan utilities.Status_message, utilities.N_ELEVS)
 )
 
-func Start(
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	) {
+func Run_controller(
+	elevator_status_chan	<-chan elevator.Elevator,
+	button_event_chan 		<-chan elevio.ButtonEvent,
+	hall_orders_chan 		chan<- utilities.Controller_to_elevator_message,
+	cab_orders_chan 		chan<- elevio.ButtonEvent,
+) {
 	just_booted = true
-	go network.Network_run(&net, ODM_to_network_chan, bcast_sorders_chan, ctrl_to_network_chan, other_elevators_status_chan, dropped_peer_chan)
-	controller_state_machine(elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, &net)
-
+	go network.Network_run(&net, service_orders_chan, send_orders_chan, node_status_chan, node_statuses_chan, dropped_peer_chan)
+	controller_state_machine(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_statuses_chan, &net)
 }
 
 func controller_state_machine(
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.StatusMessage,
-	net *network.Network,
-	) {
-
+	elevator_status_chan	<-chan elevator.Elevator,
+	button_event_chan 		<-chan elevio.ButtonEvent,
+	hall_orders_chan 		chan<- utilities.Controller_to_elevator_message,
+	cab_orders_chan 		chan<- elevio.ButtonEvent,
+	node_status_chan 		chan<- utilities.Status_message,
+	net						*network.Network,
+) {
 	fmt.Println("Starting controller state machine")
 
 	for {
 		switch state {
 		case utilities.State_slave:
-			controller_modes.Slave(&prev_odm, &connected_elevators_status, &has_ever_connected, &just_booted, &state, &current_elevator, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, other_elevators_status_chan, dropped_peer_chan, cab_call_from_network_chan, net)
+			controller_modes.Slave(&prev_odm, &connected_elevators_status, &has_ever_connected, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_master:
-			controller_modes.Master(&prev_odm, &connected_elevators_status, &just_booted, &state, &current_elevator, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, bcast_sorders_chan, ODM_to_network_chan, other_elevators_status_chan, dropped_peer_chan, cab_call_from_network_chan, net)
+			controller_modes.Master(&prev_odm, &connected_elevators_status, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, service_orders_chan, node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_disconnected:
-			controller_modes.Disconnected(&has_ever_connected, &just_booted, &state, &current_elevator, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, net)
+			controller_modes.Disconnected(&has_ever_connected, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, net)
 		}
 	}
 }

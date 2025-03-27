@@ -1,5 +1,17 @@
 package network
 
+/*-------------------------------------*/
+// INPUT:
+// net*: Network struct to collect and store all information relevant to the node and its perceived network
+// service_orders_chan: Channel for receiving service orders from the master controller
+// node_status_chan: Channel for receiving status messages from the local controller
+/*-------------------------------------*/
+// OUTPUT:
+// node_statuses_chan: Channel for sending status messages from all controllers to the local controller
+// send_orders_chan: Sending orders received on the network to local base controller
+// dropped_peer_chan: Channel for sending dropped peer status messages to the loacl controller
+/*-------------------------------------*/
+
 import (
 	"Network-go/network/bcast"
 	"Network-go/network/localip"
@@ -17,8 +29,8 @@ type Network struct {
 	Ctrl_id				int	
 	// System interface
 	node_msg 			Node_msg
-	statuses 			[utilities.N_ELEVS]utilities.StatusMessage
-	dropped_peer_status	utilities.StatusMessage
+	statuses 			[utilities.N_ELEVS]utilities.Status_message
+	dropped_peer_status	utilities.Status_message
 	N_nodes				int
 	// Peer-to-peer interface
 	id					string
@@ -31,17 +43,17 @@ type Network struct {
 
 type Node_msg struct {
 	Label 	string
-	ODM 	utilities.OrderDistributionMessage
-	SM		utilities.StatusMessage
+	ODM 	utilities.Order_distribution_message
+	SM		utilities.Status_message
 }
 
 func Network_run(
 	net* 				Network, 
-	service_orders_chan <-chan utilities.OrderDistributionMessage, 
-	send_orders_chan 	chan<- utilities.OrderDistributionMessage, 
-	node_status_chan 	<-chan utilities.StatusMessage, 
-	node_statuses_chan 	chan<- utilities.StatusMessage,
-	dropped_peer_chan	chan<- utilities.StatusMessage,
+	service_orders_chan <-chan utilities.Order_distribution_message, 
+	send_orders_chan 	chan<- utilities.Order_distribution_message, 
+	node_status_chan 	<-chan utilities.Status_message, 
+	node_statuses_chan 	chan<- utilities.Status_message,
+	dropped_peer_chan	chan<- utilities.Status_message,
 ) {
 	var id string
 	id = *utilities.Id
@@ -80,11 +92,11 @@ func system_interface(
 	net* Network, 
 	node_tx_chan 		chan<- Node_msg, 
 	node_rx_chan 		<-chan Node_msg, 
-	service_orders_chan <-chan utilities.OrderDistributionMessage, 
-	send_orders_chan 	chan<- utilities.OrderDistributionMessage, 
-	node_status_chan 	<-chan utilities.StatusMessage, 
-	node_statuses_chan 	chan<- utilities.StatusMessage,
-	dropped_peer_chan	chan<- utilities.StatusMessage,
+	service_orders_chan <-chan utilities.Order_distribution_message, 
+	send_orders_chan 	chan<- utilities.Order_distribution_message, 
+	node_status_chan 	<-chan utilities.Status_message, 
+	node_statuses_chan 	chan<- utilities.Status_message,
+	dropped_peer_chan	chan<- utilities.Status_message,
 ) {
 	for {
 		if net.Master {
@@ -102,7 +114,7 @@ func system_interface(
 		if net.dropped_peer_flag {
 			all_nodes := sort_peers(append(net.other_peers, net.id, net.dropped_peer_id))
 			net.dropped_peer_status = net.statuses[all_nodes[construct_network_id(net.dropped_peer_id)]]
-			net.statuses[all_nodes[construct_network_id(net.dropped_peer_id)]] = utilities.StatusMessage{Controller_id: utilities.Default_id, Behaviour: utilities.Default_behaviour, Direction: utilities.Default_direction}
+			net.statuses[all_nodes[construct_network_id(net.dropped_peer_id)]] = utilities.Status_message{Controller_id: utilities.Default_id, Behaviour: utilities.Default_behaviour, Direction: utilities.Default_direction}
 			dropped_peer_chan <- net.dropped_peer_status
 			net.dropped_peer_flag = false
 		}
@@ -139,7 +151,7 @@ func initialize_statuses(net* Network) {
 	}
 }
 
-func write_statuses(nodes map[string]int, alive_ids []string, statuses [utilities.N_ELEVS]utilities.StatusMessage, elevator_statuses chan<- utilities.StatusMessage) {
+func write_statuses(nodes map[string]int, alive_ids []string, statuses [utilities.N_ELEVS]utilities.Status_message, elevator_statuses chan<- utilities.Status_message) {
 	if len(elevator_statuses) == 0 {
 		for _, ids := range alive_ids {
 			id := construct_network_id(ids)

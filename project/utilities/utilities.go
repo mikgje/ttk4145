@@ -1,14 +1,15 @@
 package utilities
 
+// Supporting functions and data structures for entire elevator project
+
 import (
 	"flag"
 	"time"
-
 	"encoding/json"
 	"os"
 )
 
-type StatusMessage struct {
+type Status_message struct {
 	Controller_id int
 	Behaviour     string
 	Floor         int
@@ -16,11 +17,11 @@ type StatusMessage struct {
 	Node_orders   [N_FLOORS][N_BUTTONS]bool
 }
 
-type OrderDistributionMessage struct {
+type Order_distribution_message struct {
 	Orderlines [N_ELEVS][N_FLOORS][N_BUTTONS - 1]bool
 }
 
-type ControllerToElevatorMessage struct {
+type Controller_to_elevator_message struct {
 	Label 			 string
 	Orderline        [N_FLOORS][N_BUTTONS - 1]bool
 	Other_orderlines [][N_FLOORS][N_BUTTONS - 1]bool
@@ -53,10 +54,9 @@ const (
 	Obstruction_timer_duration int           = 10
 )
 
-const (
-	Network_prefix string = "peer-G49"
-)
+const Network_prefix string = "peer-G49"
 
+// Flags for configuring nodes on startup
 var Id = flag.String("id", "", "Set id for node")
 var Elevio = flag.Int("elevio", 15657, "Set port used for elevio")
 var Peers = flag.Int("peers", 40000, "Set port used for peers")
@@ -71,12 +71,10 @@ func Save_cab_calls(requests [N_FLOORS][N_BUTTONS]bool, column int, file_name st
 	for i, row := range requests {
 		cab_calls[i] = row[column]
 	}
-
 	data, err := json.Marshal(cab_calls)
 	if err != nil {
 		return err
 	}
-
 	return os.WriteFile(file_name, data, 0644)
 }
 
@@ -85,16 +83,13 @@ func Load_cab_calls(requests *[N_FLOORS][N_BUTTONS]bool, column int, file_name s
 	if err != nil {
 		return err
 	}
-
 	var cab_calls []bool
 	if err := json.Unmarshal(data, &cab_calls); err != nil {
 		return err
 	}
-
 	for i, cab_call := range cab_calls {
 		requests[i][column] = cab_call
 	}
-
 	return nil
 }
 

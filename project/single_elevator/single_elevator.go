@@ -23,7 +23,7 @@ import (
 func Run_single_elevator(
 	elevator_status_chan chan<- elevator.Elevator,
 	button_event_chan chan<- elevio.ButtonEvent,
-	hall_orders_chan <-chan utilities.ControllerToElevatorMessage,
+	hall_orders_chan <-chan utilities.Controller_to_elevator_message,
 	cab_orders_chan <-chan elevio.ButtonEvent,
 ) {
 

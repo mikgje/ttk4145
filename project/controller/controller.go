@@ -29,24 +29,24 @@ import (
 
 var (
 	state                       utilities.State   = utilities.State_slave
-	prev_odm 					utilities.OrderDistributionMessage
-	ctrl_to_network_chan                          = make(chan utilities.StatusMessage, 1)
-	ODM_to_network_chan                           = make(chan utilities.OrderDistributionMessage, 1)
-	bcast_sorders_chan                            = make(chan utilities.OrderDistributionMessage, 1)
-	dropped_peer_chan                             = make(chan utilities.StatusMessage, 1)
+	prev_odm 					utilities.Order_distribution_message
+	ctrl_to_network_chan                          = make(chan utilities.Status_message, 1)
+	ODM_to_network_chan                           = make(chan utilities.Order_distribution_message, 1)
+	bcast_sorders_chan                            = make(chan utilities.Order_distribution_message, 1)
+	dropped_peer_chan                             = make(chan utilities.Status_message, 1)
 	cab_call_from_network_chan 					  = make(chan [utilities.N_FLOORS]bool, 1)
-	other_elevators_status_chan                   = make(chan utilities.StatusMessage, utilities.N_ELEVS)
+	other_elevators_status_chan                   = make(chan utilities.Status_message, utilities.N_ELEVS)
 	current_elevator            elevator.Elevator = elevator.Uninitialised_elevator()
 	net                         network.Network
 	just_booted				 	bool
 	has_ever_connected 			bool
-	connected_elevators_status = make(map[int]utilities.StatusMessage)
+	connected_elevators_status = make(map[int]utilities.Status_message)
 )
 
 func Start(
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
+	ctrl_to_elev_chan chan<- utilities.Controller_to_elevator_message,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	) {
 	just_booted = true
@@ -58,9 +58,9 @@ func Start(
 func controller_state_machine(
 	elev_to_ctrl_chan <-chan elevator.Elevator,
 	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.ControllerToElevatorMessage,
+	ctrl_to_elev_chan chan<- utilities.Controller_to_elevator_message,
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.StatusMessage,
+	ctrl_to_network_chan chan<- utilities.Status_message,
 	net *network.Network,
 	) {
 

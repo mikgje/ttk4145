@@ -15,7 +15,7 @@ import (
 var (
 	button_event_chan    = make(chan elevio.ButtonEvent)
 	elevator_status_chan = make(chan elevator.Elevator, 1)
-	hall_orders_chan = make(chan utilities.ControllerToElevatorMessage, 1)
+	hall_orders_chan = make(chan utilities.Controller_to_elevator_message, 1)
 	cab_orders_chan   = make(chan elevio.ButtonEvent, 1)
 )
 

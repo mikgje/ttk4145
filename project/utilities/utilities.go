@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-type StatusMessage struct {
+type Status_message struct {
 	Controller_id int
 	Behaviour     string
 	Floor         int
@@ -16,11 +16,11 @@ type StatusMessage struct {
 	Node_orders   [N_FLOORS][N_BUTTONS]bool
 }
 
-type OrderDistributionMessage struct {
+type Order_distribution_message struct {
 	Orderlines [N_ELEVS][N_FLOORS][N_BUTTONS - 1]bool
 }
 
-type ControllerToElevatorMessage struct {
+type Controller_to_elevator_message struct {
 	Label 			 string
 	Orderline        [N_FLOORS][N_BUTTONS - 1]bool
 	Other_orderlines [][N_FLOORS][N_BUTTONS - 1]bool

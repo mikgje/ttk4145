@@ -1,4 +1,5 @@
 package network
+
 //package main
 // FAILURE: REMEMBER TO CHANGE PORTS!
 // FAILURE: MAKE SURE THAT THERE AREN'T PROBLEMATIC SYNCHRONIZATION PROBLEMS BETWEEN READING MASTER IN NETWORK AND WRITING MASTER IN P2P
@@ -6,11 +7,11 @@ import (
 	"Network-go/network/bcast"
 	"Network-go/network/localip"
 	"Network-go/network/peers"
-	"main/utilities"
 	"fmt"
-	"strings"
+	"main/utilities"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type Network struct {
@@ -20,11 +21,15 @@ type Network struct {
 	// System interface
 	node_msg 	Node_msg
 	statuses 	[utilities.N_ELEVS]utilities.StatusMessage
+	lost_status	utilities.StatusMessage
 	N_nodes		int
 	// Peer-to-peer interface
 	id			string
 	nodes 		map[string]int
 	others 		[]string
+	alive_ids	[]string
+	lost_id		string
+	lost_flag	bool
 }
 
 type Node_msg struct {
@@ -38,7 +43,8 @@ func Network_master(
 	orders_to_assign 	<-chan utilities.OrderDistributionMessage, 
 	assign_orders 		chan<- utilities.OrderDistributionMessage, 
 	elevator_status 	<-chan utilities.StatusMessage, 
-	elevator_statuses 		chan<- utilities.StatusMessage,
+	elevator_statuses 	chan<- utilities.StatusMessage,
+	lost_status			chan<- utilities.StatusMessage,
 ) {
 	var id string
 	id = *utilities.Id
@@ -68,7 +74,7 @@ func Network_master(
 	initialize_statuses(network)
 
 	// Network and rest of system interface
-	go network_interface(network, node_tx, node_rx, orders_to_assign, assign_orders, elevator_status, elevator_statuses)
+	go network_interface(network, node_tx, node_rx, orders_to_assign, assign_orders, elevator_status, elevator_statuses, lost_status)
 
 	// P2P and master-slave interface
 	go p2p_interface(network, id, peer_update)
@@ -85,6 +91,7 @@ func network_interface(
 	assign_orders 		chan<- utilities.OrderDistributionMessage, 
 	elevator_status 	<-chan utilities.StatusMessage, 
 	elevator_statuses 	chan<- utilities.StatusMessage,
+	send_lost_status	chan<- utilities.StatusMessage,
 ) {
 	for {
 		if network.Master {
@@ -98,9 +105,16 @@ func network_interface(
 				network.node_msg.Label = ""
 			default:
 			}
-			write_statuses(network.statuses, elevator_statuses)
+			write_statuses(network.nodes, network.alive_ids, network.statuses, elevator_statuses)
 		}
 
+		if network.lost_flag {
+			all_nodes := sort_peers(append(network.others, network.id, network.lost_id))
+			network.lost_status = network.statuses[all_nodes[construct_network_id(network.lost_id)]]
+			network.statuses[all_nodes[construct_network_id(network.lost_id)]] = utilities.StatusMessage{Controller_id: utilities.Default_id, Behaviour: utilities.Default_behaviour, Direction: utilities.Default_direction}
+			send_lost_status <- network.lost_status
+			network.lost_flag = false
+		}
 		select {
 		case new_status := <- elevator_status:
 			network.node_msg.SM = new_status
@@ -123,7 +137,6 @@ func network_interface(
 			}
 		default:
 		}
-
 		network.Ctrl_id = network.nodes[network.id]
 	}
 }
@@ -136,11 +149,12 @@ func initialize_statuses(network* Network) {
 	}
 }
 
-func write_statuses(statuses [utilities.N_ELEVS]utilities.StatusMessage, elevator_statuses chan<- utilities.StatusMessage) {
+func write_statuses(nodes map[string]int, alive_ids []string, statuses [utilities.N_ELEVS]utilities.StatusMessage, elevator_statuses chan<- utilities.StatusMessage) {
 	if len(elevator_statuses) == 0 {
 		// TODO: presumed that own ID is i = 0, since this will be used only(?) when master. Problem?
-		for i := 0; i < utilities.N_ELEVS; i++ {
-			elevator_statuses <- statuses[i]
+		for _, ids := range alive_ids {
+			id := construct_network_id(ids)
+			elevator_statuses <- statuses[nodes[id]]
 		}
 	}
 }
@@ -191,6 +205,29 @@ func p2p_interface(
 			network.Master = decide_master(network.id, network.others)
 			network.Connection = check_connection(peers, id)
 			network.N_nodes = len(network.nodes)
+			if len(peers.New) > 0 {
+				network.alive_ids = append(network.alive_ids, peers.New)
+				// fmt.Println("Alive peers: ", network.alive_ids)
+				// for _, ids := range network.alive_ids {
+				// 	id := construct_network_id(ids)
+				// 	fmt.Println("IDs: ", network.nodes[id])
+				// }
+			}
+			if len(peers.Lost) > 0 {
+				if network.lost_id != peers.Lost[0] {
+					network.lost_flag = true
+				}
+				network.lost_id = peers.Lost[0]
+				network.alive_ids = remove(network.alive_ids, peers.Lost[0])
+				// fmt.Println("Alive peers after lost: ", network.alive_ids)
+				// for _, ids := range network.alive_ids {
+				// 	id := construct_network_id(ids)
+				// 	fmt.Println("IDs after lost: ", network.nodes[id])
+				// }
+			// TODO: check if below is necessary
+			} else {
+				network.lost_id = ""
+			}
 			fmt.Printf("Peer update:\n")
 			fmt.Printf("  Peers:    %q\n", peers.Peers)
 			fmt.Printf("  New:      %q\n", peers.New)
@@ -232,4 +269,22 @@ func decide_master(id string, others []string) bool {
 	} else {
 		return true
 	}
+}
+
+func contains(slice []string, item string) bool {
+    for _, element := range slice {
+        if element == item {
+            return true
+        }
+    }
+    return false
+}
+
+func remove(slice []string, item string) []string {
+    for i, element := range slice {
+        if element == item {
+            return append(slice[:i], slice[i+1:]...)
+        }
+    }
+    return slice
 }

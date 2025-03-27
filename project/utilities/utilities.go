@@ -1,8 +1,8 @@
 package utilities
 
 import (
-	"time"
 	"flag"
+	"time"
 )
 
 type StatusMessage struct {
@@ -57,3 +57,40 @@ var Id		= flag.String("id", "", "Set id for node")
 var Elevio 	= flag.Int("elevio", 15657, "Set port used for elevio")
 var Peers 	= flag.Int("peers", 40000, "Set port used for peers")
 var Bcast 	= flag.Int("bcast", 50000, "Set port used for bcast")
+
+/*======================================== Save and load from disk functions ========================================*/
+/*
+const Cab_calls_file_name = "cab_calls.json"
+
+
+func Save_cab_calls(requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool, column int, file_name string) error {
+	cab_calls := make([]bool, len(requests))
+	for i, row := range requests {
+		cab_calls[i] = row[column]
+	}
+	data, err := json.Marshal(cab_calls)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(file_name, data, 0644)
+}
+
+
+func Load_cab_calls(requests *[utilities.N_FLOORS][utilities.N_BUTTONS]bool, column int, file_name string) error {
+	data, err := os.ReadFile(file_name)
+	if err != nil {
+		return err
+	}
+
+	var cab_calls []bool
+	if err := json.Unmarshal(data, &cab_calls); err != nil {
+		return err
+	}
+
+	for i, cab_call := range cab_calls {
+		requests[i][column] = cab_call
+	
+	}
+	return nil
+}
+*/

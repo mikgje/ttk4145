@@ -37,6 +37,7 @@ const (
 	EB_DoorOpen
 	EB_Moving
 	EB_Unhealthy
+	EB_Disconnected
 )
 
 // map elevator behaviour to strings for printing
@@ -45,6 +46,7 @@ var EB_to_string = map[ElevatorBehaviour]string{
 	EB_DoorOpen: "doorOpen",
 	EB_Moving:   "moving",
 	EB_Unhealthy: "unhealthy",
+	EB_Disconnected: "disconnected",
 }
 
 // map elevator direction to strings

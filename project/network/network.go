@@ -1,5 +1,17 @@
 package network
 
+/*-------------------------------------*/
+// INPUT:
+// net*: Network struct to collect and store all information relevant to the node and its perceived network
+// service_orders_chan: Channel for receiving service orders from the master controller
+// node_status_chan: Channel for receiving status messages from the local controller
+/*-------------------------------------*/
+// OUTPUT:
+// node_statuses_chan: Channel for sending status messages from all controllers to the local controller
+// send_orders_chan: Sending orders received on the network to local base controller
+// dropped_peer_chan: Channel for sending dropped peer status messages to the local controller
+/*-------------------------------------*/
+
 import (
 	"Network-go/network/bcast"
 	"Network-go/network/localip"

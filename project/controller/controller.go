@@ -2,18 +2,17 @@ package controller
 
 /*-------------------------------------*/
 // INPUT:
-// Elevator copy
-// Request orders from elevator
-// ODM from network
-// Master status from network
-// Controller ID from network
-// IF master: other node status messages
+// elevator_status_chan: Elevator status from local elevator
+// button_event_chan: Button events from local elevator
+// send_orders_chan: Service orders from network
+// *net: Network struct containing master status for local controller, connectivity, number of nodes on the network and controller ID.
+// node_statuses_chan: Status messages from all controllers on network
 /*-------------------------------------*/
 // OUTPUT:
-// Service orders to the elevator
-// Status to network
-// IF master: ODM to network
-// IF master: other node status messages to order assigner
+// hall_orders_chan: Hall orders to local elevator
+// cab_orders_chan: Cab orders to local elevator
+// node_status_chan: Status messages to network from local controller
+// IF master, service_orders_chan: Order distribution message to network from local controller
 /*-------------------------------------*/
 
 // Interface between controller network and elevator
@@ -24,7 +23,6 @@ import (
 	"main/elevio"
 	"main/network"
 	"main/utilities"
-	//For testing
 )
 
 var (

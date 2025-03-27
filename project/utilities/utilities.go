@@ -55,5 +55,5 @@ const (
 var Debug	= flag.Bool("debug", false, "Enable debug mode")
 var Id		= flag.String("id", "", "Set id for node")
 var Elevio 	= flag.Int("elevio", 15657, "Set port used for elevio")
-var Peers 	= flag.Int("peers", 15647, "Set port used for peers")
-var Bcast 	= flag.Int("bcast", 16569, "Set port used for bcast")
+var Peers 	= flag.Int("peers", 40000, "Set port used for peers")
+var Bcast 	= flag.Int("bcast", 50000, "Set port used for bcast")

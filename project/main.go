@@ -37,5 +37,4 @@ func main() {
 	go single_elevator.Start(obstruction_timer_duration, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan)
 	for {
 	}
-
 }

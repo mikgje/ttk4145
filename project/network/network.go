@@ -92,7 +92,9 @@ func network_interface(
 			case assign := <-orders_to_assign:
 				network.node_msg.ODM = assign
 				network.node_msg.Label = "O"
-				node_tx <- network.node_msg
+				for i:=0; i<100; i++ {
+					node_tx <- network.node_msg
+				}
 				network.node_msg.Label = ""
 			default:
 			}

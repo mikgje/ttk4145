@@ -6,6 +6,8 @@ import (
 	"main/elev_algo_go/timer"
 	"main/elevio"
 	"main/utilities"
+
+	"fmt"
 )
 
 var Elevator_cab elevator.Elevator
@@ -29,6 +31,11 @@ func Fsm_overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS -
 
 func Fsm_init() {
 	Elevator_cab = elevator.Elevator_uninitialised()
+
+	if err := utilities.Load_cab_calls(&Elevator_cab.Requests, elevio.BT_Cab, utilities.Cab_calls_file_name); err != nil {
+        fmt.Println("No saved cab calls found or error loading:", err)
+    }
+	
 	Fsm_set_all_lights(Elevator_cab)
 }
 

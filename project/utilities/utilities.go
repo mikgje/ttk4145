@@ -1,11 +1,12 @@
 package utilities
 
 import (
-	"time"
 	"flag"
+	"main/utilities"
+	"time"
 
-	"os"
 	"encoding/json"
+	"os"
 )
 
 type StatusMessage struct {
@@ -62,11 +63,12 @@ var Peers 	= flag.Int("peers", 15647, "Set port used for peers")
 var Bcast 	= flag.Int("bcast", 16569, "Set port used for bcast")
 
 
+/*======================================== Save and load from disk functions ========================================*/
 
 const Cab_calls_file_name = "cab_calls.json"
 
 
-func Save_cab_calls(requests [N_FLOORS][N_BUTTONS]bool, column int, file_name string) error {
+func Save_cab_calls(requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool, column int, file_name string) error {
 	cab_calls := make([]bool, len(requests))
 	for i, row := range requests {
 		cab_calls[i] = row[column]
@@ -79,7 +81,7 @@ func Save_cab_calls(requests [N_FLOORS][N_BUTTONS]bool, column int, file_name st
 }
 
 
-func Load_cab_calls(requests *[N_FLOORS][N_BUTTONS]bool, column int, file_name string) error {
+func Load_cab_calls(requests *[utilities.N_FLOORS][utilities.N_BUTTONS]bool, column int, file_name string) error {
 	data, err := os.ReadFile(file_name)
 	if err != nil {
 		return err

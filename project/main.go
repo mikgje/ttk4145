@@ -26,6 +26,5 @@ func main() {
 
 	go controller.Start(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan)
 	go single_elevator.Run_single_elevator(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan)
-	for {
-	}
+	for {}
 }

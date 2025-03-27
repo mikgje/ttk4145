@@ -96,3 +96,14 @@ func Load_cab_calls(requests *[N_FLOORS][N_BUTTONS]bool, column int, file_name s
 
 	return nil
 }
+
+/*========================================UTILITY FUNCTIONS========================================*/
+
+func Remove_from_slice(slice []string, item string) []string {
+    for i, element := range slice {
+        if element == item {
+            return append(slice[:i], slice[i+1:]...)
+        }
+    }
+    return slice
+}

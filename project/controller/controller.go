@@ -50,7 +50,7 @@ func Start(
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	) {
 	just_booted = true
-	go network.Network_master(&net, ODM_to_network_chan, bcast_sorders_chan, ctrl_to_network_chan, other_elevators_status_chan, dropped_peer_chan)
+	go network.Network_run(&net, ODM_to_network_chan, bcast_sorders_chan, ctrl_to_network_chan, other_elevators_status_chan, dropped_peer_chan)
 	controller_state_machine(elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, &net)
 
 }

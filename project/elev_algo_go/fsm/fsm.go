@@ -13,9 +13,7 @@ var kill_timer_channel = make(chan bool)
 
 func Init_fsm() {
 	Elevator_cab = elevator.Uninitialised_elevator()
-
 	utilities.Load_cab_calls(&Elevator_cab.Requests, elevio.BT_Cab, utilities.Cab_calls_file_name)
-
 	Set_all_lights(Elevator_cab)
 	elevio.SetDoorOpenLamp(false)
 }
@@ -35,7 +33,6 @@ func Overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS - 1]b
 		}
 	}
 }
-
 
 func Set_all_lights(es elevator.Elevator) {
 	// Set lights for local service orders
@@ -91,6 +88,7 @@ func On_request_button_press(btn_floor int, btn_type elevio.ButtonType, timer_ch
 		pair := requests_elev.Requests_choose_direction(Elevator_cab)
 		Elevator_cab.Dirn = pair.Dirn
 		Elevator_cab.Behaviour = pair.Behaviour
+		
 		switch pair.Behaviour {
 		case elevator.EB_DoorOpen:
 			elevio.SetDoorOpenLamp(true)

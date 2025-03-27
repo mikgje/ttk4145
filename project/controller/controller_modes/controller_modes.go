@@ -184,7 +184,7 @@ func Master(
 					break outer_loop
 				}
 			}
-
+			(*connected_elevators_status)[net.Ctrl_id] = status_message
 
 			status_slice := make([]utilities.Status_message, 0, len((*connected_elevators_status)))
 

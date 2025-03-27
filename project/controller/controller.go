@@ -19,7 +19,7 @@ package controller
 // Interface between controller network and elevator
 import (
 	"fmt"
-	"main/controll/controller_modes"
+	"main/controller/controller_modes"
 	"main/elev_algo_go/elevator"
 	"main/elevio"
 	"main/network"

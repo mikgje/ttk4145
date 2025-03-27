@@ -2,8 +2,8 @@ package controller_modes
 
 import (
 	"fmt"
-	"main/controll/controller_tools"
-	order_handler "main/controll/hall_order_assigner"
+	"main/controller/controller_tools"
+	"main/hall_order_assigner"
 	"main/elev_algo_go/elevator"
 	"main/elevio"
 	"main/network"

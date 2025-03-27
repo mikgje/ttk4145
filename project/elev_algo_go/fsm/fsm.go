@@ -22,11 +22,11 @@ func Return_elevator() elevator.Elevator {
 	return Elevator_cab
 }
 
-func Overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, timer_channel chan<- bool) {
+func Overwrite_hall_orders(orders [utilities.N_FLOORS][utilities.N_BUTTONS - 1]bool, door_timer_chan chan<- bool, elevator_stuck_chan chan bool, kill_stuck_timer_chan chan bool) {
 	for floor := 0; floor < utilities.N_FLOORS; floor++ {
 		for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
 			if orders[floor][btn] {
-				On_request_button_press(floor, elevio.ButtonType(btn), timer_channel)
+				On_request_button_press(floor, elevio.ButtonType(btn), door_timer_chan, elevator_stuck_chan, kill_stuck_timer_chan)
 			} else {
 				Elevator_cab.Requests[floor][btn] = false
 			}
@@ -64,11 +64,11 @@ func On_init_between_floors() {
 	Elevator_cab.Behaviour = elevator.EB_Moving
 }
 
-func On_request_button_press(btn_floor int, btn_type elevio.ButtonType, timer_channel chan<- bool) {
+func On_request_button_press(btn_floor int, btn_type elevio.ButtonType, door_timer_chan chan<- bool, elevator_stuck_chan chan bool, kill_stuck_timer_chan chan bool) {
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:
 		if requests_elev.Requests_should_clear_immediately(Elevator_cab, btn_floor, btn_type) {
-			go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, timer_channel, kill_timer_channel)
+			go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, door_timer_chan, kill_timer_channel)
 		} else {
 			Elevator_cab.Requests[btn_floor][btn_type] = true
 			if btn_type == elevio.BT_Cab {
@@ -88,21 +88,28 @@ func On_request_button_press(btn_floor int, btn_type elevio.ButtonType, timer_ch
 		pair := requests_elev.Requests_choose_direction(Elevator_cab)
 		Elevator_cab.Dirn = pair.Dirn
 		Elevator_cab.Behaviour = pair.Behaviour
-		
+
 		switch pair.Behaviour {
 		case elevator.EB_DoorOpen:
 			elevio.SetDoorOpenLamp(true)
-			go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, timer_channel, kill_timer_channel)
+			go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, door_timer_chan, kill_timer_channel)
 			Elevator_cab = requests_elev.Requests_clear_at_current_floor(Elevator_cab)
 		case elevator.EB_Moving:
 			elevio.SetMotorDirection(Elevator_cab.Dirn)
+			Start_stuck_check(elevator_stuck_chan, kill_stuck_timer_chan)
 		case elevator.EB_Idle:
 		}
 	}
 	Set_all_lights(Elevator_cab)
 }
 
-func On_floor_arrival(new_floor int, timer_channel chan<- bool) {
+func On_floor_arrival(new_floor int, door_timer_chan chan<- bool, kill_stuck_timer_chan chan bool) {
+
+	select{
+		case kill_stuck_timer_chan <- true:
+		default:
+	}
+
     Elevator_cab.Floor = new_floor
     elevio.SetFloorIndicator(Elevator_cab.Floor)
     switch Elevator_cab.Behaviour {
@@ -112,21 +119,21 @@ func On_floor_arrival(new_floor int, timer_channel chan<- bool) {
             elevio.SetDoorOpenLamp(true)
             Elevator_cab = requests_elev.Requests_clear_at_current_floor(Elevator_cab)
 			utilities.Save_cab_calls(Elevator_cab.Requests, elevio.BT_Cab, utilities.Cab_calls_file_name)            
-            go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, timer_channel, kill_timer_channel)
+            go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, door_timer_chan, kill_timer_channel)
             Set_all_lights(Elevator_cab)
             Elevator_cab.Behaviour = elevator.EB_DoorOpen
         }
 	case elevator.EB_Idle:
 		elevio.SetDoorOpenLamp(true)
 		Elevator_cab = requests_elev.Requests_clear_at_current_floor(Elevator_cab)
-		go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, timer_channel, kill_timer_channel)
+		go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, door_timer_chan, kill_timer_channel)
 		Set_all_lights(Elevator_cab)
 		Elevator_cab.Behaviour = elevator.EB_DoorOpen
     default:
     }
 }
 
-func Fsm_on_door_timeout(timer_channel chan<- bool) {
+func Fsm_on_door_timeout(door_timer_chan chan<- bool, elevator_stuck_chan chan bool, kill_stuck_timer_chan chan bool) {
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:
 		pair := requests_elev.Requests_choose_direction(Elevator_cab)
@@ -135,17 +142,25 @@ func Fsm_on_door_timeout(timer_channel chan<- bool) {
 
 		switch Elevator_cab.Behaviour {
 		case elevator.EB_DoorOpen:
-			go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, timer_channel, kill_timer_channel)
+			go timer.Timer_start(Elevator_cab.Config.Door_open_duration_s, door_timer_chan, kill_timer_channel)
 			Elevator_cab = requests_elev.Requests_clear_at_current_floor(Elevator_cab)
 			Set_all_lights(Elevator_cab)
 		case elevator.EB_Moving:
 			elevio.SetDoorOpenLamp(false)
 			elevio.SetMotorDirection(Elevator_cab.Dirn)
+			Start_stuck_check(elevator_stuck_chan, kill_stuck_timer_chan)
 		case elevator.EB_Idle:
 			elevio.SetDoorOpenLamp(false)
 			elevio.SetMotorDirection(Elevator_cab.Dirn)
+			Start_stuck_check(elevator_stuck_chan, kill_stuck_timer_chan)
 		}
 	default:
 		break
+	}
+}
+
+func Start_stuck_check(elevator_stuck_chan chan<- bool, kill_stuck_timer_chan chan bool) {
+	if Elevator_cab.Dirn != elevio.MD_Stop {
+		go timer.Timer_start(float64(utilities.Obstruction_timer_duration), elevator_stuck_chan, kill_stuck_timer_chan)
 	}
 }

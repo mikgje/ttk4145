@@ -36,13 +36,16 @@ func Run_single_elevator(
 	obstruction_timer_chan      := make(chan bool)
 	abort_timer_chan            := make(chan bool)
 
+	elevator_stuck_chan 		:= make(chan bool)
+	kill_stuck_timer_chan 		:= make(chan bool)
+
 	elevio.Init(fmt.Sprintf("localhost:%d", *utilities.Elevio), utilities.N_FLOORS)
 	fsm.Init_fsm()
 
 	if elevio.GetFloor() == -1 {
 		fsm.On_init_between_floors()
 	} else {
-		fsm.On_floor_arrival(elevio.GetFloor(), door_timer_chan)
+		fsm.On_floor_arrival(elevio.GetFloor(), door_timer_chan, nil)
 	}
 
 	go elevio.PollButtons(button_io_chan)
@@ -62,7 +65,7 @@ func Run_single_elevator(
 		case button := <-button_io_chan:
 			button_event_chan <- button
 		case floor := <-floor_chan:
-			fsm.On_floor_arrival(floor, door_timer_chan)
+			fsm.On_floor_arrival(floor, door_timer_chan, kill_stuck_timer_chan)
 		case obstruction := <-obstruction_io_chan:
 			elevator_obstructed = obstruction
 			if elevator_obstructed {
@@ -82,7 +85,7 @@ func Run_single_elevator(
 			elevio.SetStopLamp(true)
 		case <-door_timer_chan:
 			if !(elevator_obstructed) {
-				fsm.Fsm_on_door_timeout(door_timer_chan)
+				fsm.Fsm_on_door_timeout(door_timer_chan, elevator_stuck_chan ,kill_stuck_timer_chan)
 			} else {
 				go timer.Timer_start(3, door_timer_chan, nil)
 			}
@@ -91,16 +94,18 @@ func Run_single_elevator(
 				for floor := 0; floor < utilities.N_FLOORS; floor++ {
 					for button := 0; button < utilities.N_BUTTONS-1; button++ {
 						if msg.Orderline[floor][button] {
-							fsm.On_request_button_press(floor, elevio.ButtonType(button), door_timer_chan)
+							fsm.On_request_button_press(floor, elevio.ButtonType(button), door_timer_chan, elevator_stuck_chan, kill_stuck_timer_chan)
 						}
 					}
 				}
 			} else {
-				fsm.Overwrite_hall_orders(msg.Orderline, door_timer_chan)
+				fsm.Overwrite_hall_orders(msg.Orderline, door_timer_chan, elevator_stuck_chan, kill_stuck_timer_chan)
 				fsm.Set_other_orderlines(msg.Other_orderlines)
 			}
 		case msg := <-cab_orders_chan:
-			fsm.On_request_button_press(msg.Floor, msg.Button, door_timer_chan)
+			fsm.On_request_button_press(msg.Floor, msg.Button, door_timer_chan, elevator_stuck_chan, kill_stuck_timer_chan)
+		case <-elevator_stuck_chan:
+			fsm.Elevator_cab.Behaviour = elevator.EB_Obstructed
 		}
 	}
 }

@@ -66,7 +66,7 @@ func controller_state_machine(
 		case utilities.State_master:
 			controller_modes.Master(&prev_odm, &connected_elevators_status, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, service_orders_chan, node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_disconnected:
-			controller_modes.Disconnected(&state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, net)
+			controller_modes.Disconnected(&state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, net)
 		}
 	}
 }

@@ -72,13 +72,13 @@ func Slave(
 	connected_elevators_status *map[int]utilities.Status_message,
 	state *utilities.State,
 	current_elevator *elevator.Elevator,
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.Controller_to_elevator_message,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.Status_message,
-	network_to_ctrl_chan <-chan utilities.Order_distribution_message,
-	other_elevators_status_chan <-chan utilities.Status_message,
+	elevator_status_chan <-chan elevator.Elevator,
+	button_event_chan <-chan elevio.ButtonEvent,
+	hall_orders_chan chan<- utilities.Controller_to_elevator_message,
+	cab_orders_chan chan<- elevio.ButtonEvent,
+	node_status_chan chan<- utilities.Status_message,
+	send_orders_chan <-chan utilities.Order_distribution_message,
+	node_statuses_chan <-chan utilities.Status_message,
 	dropped_peer_chan <-chan utilities.Status_message,
 	net *network.Network,
 ) {
@@ -88,7 +88,7 @@ func Slave(
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 
-	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
+	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, kill_base_ctrl_chan)
 	for {
 		if !net.Connection {
 			*state = utilities.State_disconnected
@@ -103,7 +103,7 @@ func Slave(
 			return
 		}
 		select {
-		case msg := <-other_elevators_status_chan:
+		case msg := <-node_statuses_chan:
 			if msg.Controller_id != utilities.Default_id {
 				(*connected_elevators_status)[msg.Controller_id] = msg
 			}
@@ -121,14 +121,14 @@ func Master(
 	connected_elevators_status *map[int]utilities.Status_message,
 	state *utilities.State,
 	current_elevator *elevator.Elevator,
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.Controller_to_elevator_message,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.Status_message,
-	network_to_ctrl_chan <-chan utilities.Order_distribution_message,
-	ODM_to_network_chan chan<- utilities.Order_distribution_message,
-	other_elevators_status_chan <-chan utilities.Status_message,
+	elevator_status_chan <-chan elevator.Elevator,
+	button_event_chan <-chan elevio.ButtonEvent,
+	hall_orders_chan chan<- utilities.Controller_to_elevator_message,
+	cab_orders_chan chan<- elevio.ButtonEvent,
+	node_status_chan chan<- utilities.Status_message,
+	send_orders_chan <-chan utilities.Order_distribution_message,
+	service_orders_chan chan<- utilities.Order_distribution_message,
+	node_statuses_chan <-chan utilities.Status_message,
 	dropped_peer_chan <-chan utilities.Status_message,
 	net *network.Network,
 ) {
@@ -138,12 +138,12 @@ func Master(
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 
-	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
+	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, kill_base_ctrl_chan)
 
 	for {
 		select {
 
-		case msg := <-other_elevators_status_chan:
+		case msg := <-node_statuses_chan:
 
 			if msg.Controller_id != utilities.Default_id {
 				(*connected_elevators_status)[msg.Controller_id] = msg
@@ -153,7 +153,7 @@ func Master(
 			outer_loop:
 			for i := 0; i < utilities.N_ELEVS; i++ {
 				select {
-				case msg := <-other_elevators_status_chan:
+				case msg := <-node_statuses_chan:
 					if msg.Controller_id != utilities.Default_id {
 						(*connected_elevators_status)[msg.Controller_id] = msg
 						// fmt.Println("Controller id outside if: ", msg.Controller_id)
@@ -203,15 +203,15 @@ func Master(
 				fmt.Println("New ODM: ", new_odm)
 				fmt.Println("Connected elevators status: ", *connected_elevators_status, "\n\n\n\n")
 
-				ODM_to_network_chan <- new_odm
+				service_orders_chan <- new_odm
 				*prev_odm = new_odm
 
 				for i := 0; i < 50; i++ {
-					ODM_to_network_chan <- new_odm
+					service_orders_chan <- new_odm
 				}
 
 				// BREAK GLASS IN CASE OF EMEGENCY
-				controller_tools.Flush_status_messages(other_elevators_status_chan)
+				controller_tools.Flush_status_messages(node_statuses_chan)
 				dropped_peer = false
 			}
 
@@ -223,7 +223,7 @@ func Master(
 			disconnected_peer_status.Behaviour = elevator.EB_to_string[elevator.EB_Disconnected]
 			(*connected_elevators_status)[net.N_nodes] = disconnected_peer_status
 			// BREAK GLASS IN CASE OF EMEGENCY
-			controller_tools.Flush_status_messages(other_elevators_status_chan)
+			controller_tools.Flush_status_messages(node_statuses_chan)
 			fmt.Println("Disconnected peer status: ", disconnected_peer_status)
 			fmt.Println("Connected_elevators_status in dropped peer: ", *connected_elevators_status)
 
@@ -249,29 +249,28 @@ func Master(
 func Disconnected(
 	state *utilities.State,
 	current_elevator *elevator.Elevator,
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.Controller_to_elevator_message,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.Status_message,
+	elevator_status_chan <-chan elevator.Elevator,
+	button_event_chan <-chan elevio.ButtonEvent,
+	hall_orders_chan chan<- utilities.Controller_to_elevator_message,
+	cab_orders_chan chan<- elevio.ButtonEvent,
 	net *network.Network,
 ) {
 
 	for {
 		select {
-		case msg := <-elev_to_ctrl_chan:
+		case msg := <-elevator_status_chan:
 			*current_elevator = msg
-		case msg := <-elev_to_ctrl_button_chan:
+		case msg := <-button_event_chan:
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
 			fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
 			if new_order_button == elevio.BT_Cab {
-				ctrl_to_elev_cab_chan <- new_order
+				cab_orders_chan <- new_order
 			} else {
 				var orderline [utilities.N_FLOORS][utilities.N_BUTTONS-1]bool
 				orderline[new_order_floor][new_order_button] = true
-				ctrl_to_elev_chan <- utilities.Controller_to_elevator_message{Label: elevator.EB_to_string[elevator.EB_Disconnected], Orderline: orderline}
+				hall_orders_chan <- utilities.Controller_to_elevator_message{Label: elevator.EB_to_string[elevator.EB_Disconnected], Orderline: orderline}
 			}
 		default:
 			if net.Connection {

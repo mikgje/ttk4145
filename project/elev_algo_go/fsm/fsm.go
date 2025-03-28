@@ -108,6 +108,10 @@ func On_floor_arrival(new_floor int, door_timer_chan chan<- bool, kill_stuck_tim
 	select{
 		case kill_stuck_timer_chan <- true:
 		default:
+			if Elevator_cab.Behaviour == elevator.EB_Obstructed {
+				On_init_between_floors()
+				elevio.SetStopLamp(false)
+			}
 	}
 
     Elevator_cab.Floor = new_floor
@@ -133,7 +137,7 @@ func On_floor_arrival(new_floor int, door_timer_chan chan<- bool, kill_stuck_tim
     }
 }
 
-func Fsm_on_door_timeout(door_timer_chan chan<- bool, elevator_stuck_chan chan bool, kill_stuck_timer_chan chan bool) {
+func On_door_timeout(door_timer_chan chan<- bool, elevator_stuck_chan chan bool, kill_stuck_timer_chan chan bool) {
 	switch Elevator_cab.Behaviour {
 	case elevator.EB_DoorOpen:
 		pair := requests_elev.Requests_choose_direction(Elevator_cab)

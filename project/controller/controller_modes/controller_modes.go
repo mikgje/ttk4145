@@ -35,16 +35,13 @@ func base_controller(
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
+
 			if new_order_button == elevio.BT_Cab {
 				ctrl_to_elev_cab_chan <- new_order
 			}
-
 			augmented_requests = controller_tools.Augment_request_array(current_elevator.Requests, new_order)
-
 			*status_message = utilities.Status_message{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
-			fmt.Println("Status message: ", *status_message)
-
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/ :
 			new_orders := controller_tools.Extract_orderline(*controller_id, msg)
 
@@ -53,12 +50,12 @@ func base_controller(
 					status_message.Node_orders[floor][btn] = new_orders[floor][btn]
 				}
 			}
-
 			other_orderlines := controller_tools.Extract_other_orderlines(*controller_id, msg)
 			ctrl_to_elev_chan <- utilities.Controller_to_elevator_message{Orderline: new_orders, Other_orderlines: other_orderlines}
 		case <-kill_base_ctrl_chan:
 			return
 		}
+
 		if current_elevator.Floor != -1 {
 			ctrl_to_network_chan <- *status_message
 		}

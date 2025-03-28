@@ -85,7 +85,7 @@ func Run_single_elevator(
 			elevio.SetStopLamp(true)
 		case <-door_timer_chan:
 			if !(elevator_obstructed) {
-				fsm.Fsm_on_door_timeout(door_timer_chan, elevator_stuck_chan ,kill_stuck_timer_chan)
+				fsm.On_door_timeout(door_timer_chan, elevator_stuck_chan ,kill_stuck_timer_chan)
 			} else {
 				go timer.Timer_start(3, door_timer_chan, nil)
 			}
@@ -106,6 +106,7 @@ func Run_single_elevator(
 			fsm.On_request_button_press(msg.Floor, msg.Button, door_timer_chan, elevator_stuck_chan, kill_stuck_timer_chan)
 		case <-elevator_stuck_chan:
 			fsm.Elevator_cab.Behaviour = elevator.EB_Obstructed
+			elevio.SetStopLamp(true)
 		}
 	}
 }

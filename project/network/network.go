@@ -151,11 +151,11 @@ func initialize_statuses(net* Network) {
 	}
 }
 
-func write_statuses(nodes map[string]int, alive_ids []string, statuses [utilities.N_ELEVS]utilities.Status_message, elevator_statuses chan<- utilities.Status_message) {
-	if len(elevator_statuses) == 0 {
+func write_statuses(nodes map[string]int, alive_ids []string, statuses [utilities.N_ELEVS]utilities.Status_message, node_statuses_chan chan<- utilities.Status_message) {
+	if len(node_statuses_chan) == 0 {
 		for _, ids := range alive_ids {
 			id := construct_network_id(ids)
-			elevator_statuses <- statuses[nodes[id]]
+			node_statuses_chan <- statuses[nodes[id]]
 		}
 	}
 }

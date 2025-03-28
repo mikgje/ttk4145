@@ -39,7 +39,7 @@ var (
 	dropped_peer_chan			= make(chan utilities.Status_message, 1)
 )
 
-func Start(
+func Run_controller(
 	elevator_status_chan <-chan elevator.Elevator,
 	button_event_chan <-chan elevio.ButtonEvent,
 	hall_orders_chan chan<- utilities.Controller_to_elevator_message,

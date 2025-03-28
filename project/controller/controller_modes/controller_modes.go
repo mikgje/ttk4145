@@ -16,33 +16,33 @@ func base_controller(
 	status_message *utilities.Status_message,
 	current_elevator *elevator.Elevator,
 	controller_id *int,
-	elev_to_ctrl_chan <-chan elevator.Elevator,
-	elev_to_ctrl_button_chan <-chan elevio.ButtonEvent,
-	ctrl_to_elev_chan chan<- utilities.Controller_to_elevator_message,
-	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
-	ctrl_to_network_chan chan<- utilities.Status_message,
-	network_to_ctrl_chan <-chan utilities.Order_distribution_message,
+	elevator_status_chan <-chan elevator.Elevator,
+	button_event_chan <-chan elevio.ButtonEvent,
+	hall_orders_chan chan<- utilities.Controller_to_elevator_message,
+	cab_orders_chan chan<- elevio.ButtonEvent,
+	node_status_chan chan<- utilities.Status_message,
+	send_orders_chan <-chan utilities.Order_distribution_message,
 	kill_base_ctrl_chan <-chan bool,
 ) {
 	var augmented_requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool
 	for {
 		select {
-		case msg := <-elev_to_ctrl_chan:
+		case msg := <-elevator_status_chan:
 			*current_elevator = msg
 			*status_message = utilities.Status_message{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
-		case msg := <-elev_to_ctrl_button_chan:
+		case msg := <-button_event_chan:
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
 
 			if new_order_button == elevio.BT_Cab {
-				ctrl_to_elev_cab_chan <- new_order
+				cab_orders_chan <- new_order
 			}
 			augmented_requests = controller_tools.Augment_request_array(current_elevator.Requests, new_order)
 			*status_message = utilities.Status_message{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
-		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/ :
+		case msg := <-send_orders_chan /*The channel that supplies the ODM*/ :
 			new_orders := controller_tools.Extract_orderline(*controller_id, msg)
 
 			for floor := 0; floor < utilities.N_FLOORS; floor++ {
@@ -51,13 +51,13 @@ func base_controller(
 				}
 			}
 			other_orderlines := controller_tools.Extract_other_orderlines(*controller_id, msg)
-			ctrl_to_elev_chan <- utilities.Controller_to_elevator_message{Orderline: new_orders, Other_orderlines: other_orderlines}
+			hall_orders_chan <- utilities.Controller_to_elevator_message{Orderline: new_orders, Other_orderlines: other_orderlines}
 		case <-kill_base_ctrl_chan:
 			return
 		}
 
 		if current_elevator.Floor != -1 {
-			ctrl_to_network_chan <- *status_message
+			node_status_chan <- *status_message
 		}
 	}
 }

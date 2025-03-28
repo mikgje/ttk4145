@@ -24,9 +24,7 @@ func base_controller(
 	network_to_ctrl_chan <-chan utilities.Order_distribution_message,
 	kill_base_ctrl_chan <-chan bool,
 ) {
-
 	var augmented_requests [utilities.N_FLOORS][utilities.N_BUTTONS]bool
-
 	for {
 		select {
 		case msg := <-elev_to_ctrl_chan:
@@ -82,26 +80,27 @@ func Slave(
 	dropped_peer_chan <-chan utilities.Status_message,
 	net *network.Network,
 ) {
-
 	kill_base_ctrl_chan := make(chan bool)
-
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
-
 	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, kill_base_ctrl_chan)
+	
 	for {
+
 		if !net.Connection {
 			*state = utilities.State_disconnected
 			kill_base_ctrl_chan <- true
 			fmt.Println("Switching to disconnected mode")
 			return
 		}
+
 		if net.Master {
 			*state = utilities.State_master
 			kill_base_ctrl_chan <- true
 			fmt.Println("Switching to master mode")
 			return
 		}
+
 		select {
 		case msg := <-node_statuses_chan:
 			if msg.Controller_id != utilities.Default_id {
@@ -132,63 +131,39 @@ func Master(
 	dropped_peer_chan <-chan utilities.Status_message,
 	net *network.Network,
 ) {
-
 	var kill_base_ctrl_chan = make(chan bool)
-	var dropped_peer bool = false
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
-
 	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, kill_base_ctrl_chan)
 
 	for {
 		select {
-
 		case msg := <-node_statuses_chan:
 
 			if msg.Controller_id != utilities.Default_id {
 				(*connected_elevators_status)[msg.Controller_id] = msg
-				// fmt.Println("Controller id: ", msg.Controller_id)
 			}
-			
 			outer_loop:
 			for i := 0; i < utilities.N_ELEVS; i++ {
 				select {
 				case msg := <-node_statuses_chan:
 					if msg.Controller_id != utilities.Default_id {
 						(*connected_elevators_status)[msg.Controller_id] = msg
-						// fmt.Println("Controller id outside if: ", msg.Controller_id)
 					}
 				default:
-
 					break outer_loop
 				}
 			}
 			(*connected_elevators_status)[net.Ctrl_id] = status_message
-
-			status_slice := make([]utilities.Status_message, 0, len((*connected_elevators_status)))
-
-			for _, status := range *connected_elevators_status {
-				status_slice = append(status_slice, status)
-
-			}
-
 			status_to_order_handler := make([]utilities.Status_message, 0, len((*connected_elevators_status)))
-			for _, status := range *connected_elevators_status {
 
+			for _, status := range *connected_elevators_status {
 				if status.Behaviour == elevator.EB_to_string[elevator.EB_Disconnected] {
-					// fmt.Println("Received disconnected elevator")
 					status.Behaviour = elevator.EB_to_string[elevator.EB_Obstructed]
 					status_to_order_handler = append(status_to_order_handler, status)
-					// fmt.Println("Connected_elevators_status before delete: ", *connected_elevators_status)
 					delete((*connected_elevators_status), status.Controller_id)
-					// fmt.Println("Connected_elevators_status after delete: ", *connected_elevators_status)
-					// fmt.Println("Status to order handler: ", status_to_order_handler)
-
 				} else {
 					status_to_order_handler = append(status_to_order_handler, status)
-					if dropped_peer {
-						// fmt.Println("Status to order handler: ", status_to_order_handler)
-					}
 				}
 			}
 
@@ -198,45 +173,33 @@ func Master(
 			} else {
 				new_odm = *prev_odm
 			}
+		
 			if new_odm != *prev_odm {
-				fmt.Println("Status_to_order_handler: ", status_to_order_handler)
-				fmt.Println("New ODM: ", new_odm)
-				fmt.Println("Connected elevators status: ", *connected_elevators_status, "\n\n\n\n")
-
 				service_orders_chan <- new_odm
 				*prev_odm = new_odm
-
 				for i := 0; i < 50; i++ {
 					service_orders_chan <- new_odm
 				}
-
-				// BREAK GLASS IN CASE OF EMEGENCY
 				controller_tools.Flush_status_messages(node_statuses_chan)
-				dropped_peer = false
 			}
 
 		case msg := <-dropped_peer_chan:
-			dropped_peer = true
 			fmt.Println("Dropped peer")
 			disconnected_peer_status := msg
 			disconnected_peer_status.Controller_id = net.N_nodes
 			disconnected_peer_status.Behaviour = elevator.EB_to_string[elevator.EB_Disconnected]
 			(*connected_elevators_status)[net.N_nodes] = disconnected_peer_status
-			// BREAK GLASS IN CASE OF EMEGENCY
 			controller_tools.Flush_status_messages(node_statuses_chan)
-			fmt.Println("Disconnected peer status: ", disconnected_peer_status)
-			fmt.Println("Connected_elevators_status in dropped peer: ", *connected_elevators_status)
-
-
 		default:
-
 		}
+
 		if !net.Connection {
 			*state = utilities.State_disconnected
 			kill_base_ctrl_chan <- true
 			fmt.Println("Switching to disconnected mode")
 			return
 		}
+
 		if !net.Master {
 			*state = utilities.State_slave
 			kill_base_ctrl_chan <- true
@@ -264,7 +227,6 @@ func Disconnected(
 			new_order_floor := msg.Floor
 			new_order_button := msg.Button
 			new_order := elevio.ButtonEvent{Floor: new_order_floor, Button: new_order_button}
-			fmt.Printf("New order from local elevator: Floor %d, Button %s\n", new_order_floor, elevator.Button_to_string[new_order_button])
 			if new_order_button == elevio.BT_Cab {
 				cab_orders_chan <- new_order
 			} else {
@@ -273,11 +235,12 @@ func Disconnected(
 				hall_orders_chan <- utilities.Controller_to_elevator_message{Label: elevator.EB_to_string[elevator.EB_Disconnected], Orderline: orderline}
 			}
 		default:
-			if net.Connection {
-				*state = utilities.State_slave
-				fmt.Println("Switching to slave mode")
-				return
-			}
+		}
+
+		if net.Connection {
+			*state = utilities.State_slave
+			fmt.Println("Switching to slave mode")
+			return
 		}
 	}
 }

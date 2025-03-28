@@ -39,7 +39,6 @@ var (
 	service_orders_chan			= make(chan utilities.Order_distribution_message, 1)
 	send_orders_chan			= make(chan utilities.Order_distribution_message, 1)
 	dropped_peer_chan			= make(chan utilities.Status_message, 1)
-	cab_call_from_network_chan	= make(chan [utilities.N_FLOORS]bool, 1)
 )
 
 func Start(
@@ -66,9 +65,9 @@ func controller_state_machine(
 	for {
 		switch state {
 		case utilities.State_slave:
-			controller_modes.Slave(&prev_odm, &connected_elevators_status, &has_ever_connected, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, node_statuses_chan, dropped_peer_chan, cab_call_from_network_chan, net)
+			controller_modes.Slave(&prev_odm, &connected_elevators_status, &has_ever_connected, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_master:
-			controller_modes.Master(&prev_odm, &connected_elevators_status, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, service_orders_chan, node_statuses_chan, dropped_peer_chan, cab_call_from_network_chan, net)
+			controller_modes.Master(&prev_odm, &connected_elevators_status, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, service_orders_chan, node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_disconnected:
 			controller_modes.Disconnected(&has_ever_connected, &just_booted, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, net)
 		}

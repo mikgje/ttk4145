@@ -21,7 +21,6 @@ func base_controller(
 	ctrl_to_elev_cab_chan chan<- elevio.ButtonEvent,
 	ctrl_to_network_chan chan<- utilities.Status_message,
 	network_to_ctrl_chan <-chan utilities.Order_distribution_message,
-	cab_call_from_network_chan <-chan [utilities.N_FLOORS]bool,
 	kill_base_ctrl_chan <-chan bool,
 ) {
 
@@ -49,7 +48,6 @@ func base_controller(
 
 		case msg := <-network_to_ctrl_chan /*The channel that supplies the ODM*/ :
 			new_orders := controller_tools.Extract_orderline(*controller_id, msg)
-			fmt.Println("New orders: ", new_orders)
 
 			for floor := 0; floor < utilities.N_FLOORS; floor++ {
 				for btn := 0; btn < utilities.N_BUTTONS-1; btn++ {
@@ -59,21 +57,10 @@ func base_controller(
 
 			other_orderlines := controller_tools.Extract_other_orderlines(*controller_id, msg)
 			ctrl_to_elev_chan <- utilities.Controller_to_elevator_message{Orderline: new_orders, Other_orderlines: other_orderlines}
-		//TODO: Set up channel to transport cab calls from network to base controller in case of restart
-		case msg := <-cab_call_from_network_chan:
-			if *just_booted {
-				for i := 0; i < utilities.N_FLOORS; i++ {
-					if msg[i] {
-						ctrl_to_elev_cab_chan <- elevio.ButtonEvent{i, elevio.BT_Cab}
-					}
-				}
-				*just_booted = false
-			}
 		case <-kill_base_ctrl_chan:
 			return
 		}
 		if current_elevator.Floor != -1 {
-			// fmt.Println("Sending status message")
 			ctrl_to_network_chan <- *status_message
 		}
 	}
@@ -94,7 +81,6 @@ func Slave(
 	network_to_ctrl_chan <-chan utilities.Order_distribution_message,
 	other_elevators_status_chan <-chan utilities.Status_message,
 	dropped_peer_chan <-chan utilities.Status_message,
-	cab_call_from_network_chan <-chan [utilities.N_FLOORS]bool,
 	net *network.Network,
 ) {
 
@@ -103,7 +89,7 @@ func Slave(
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 
-	go base_controller(just_booted, &status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, cab_call_from_network_chan, kill_base_ctrl_chan)
+	go base_controller(just_booted, &status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
 	for {
 		if !net.Connection {
 			*state = utilities.State_disconnected
@@ -150,7 +136,6 @@ func Master(
 	ODM_to_network_chan chan<- utilities.Order_distribution_message,
 	other_elevators_status_chan <-chan utilities.Status_message,
 	dropped_peer_chan <-chan utilities.Status_message,
-	cab_call_from_network_chan <-chan [utilities.N_FLOORS]bool,
 	net *network.Network,
 ) {
 
@@ -159,7 +144,7 @@ func Master(
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 
-	go base_controller(just_booted, &status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, cab_call_from_network_chan, kill_base_ctrl_chan)
+	go base_controller(just_booted, &status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
 
 	for {
 		select {

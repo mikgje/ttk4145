@@ -110,8 +110,8 @@ func create_order_distribution_message(raw_output map[string]interface{}) (utili
 }
 
 func Order_handler(statuses []utilities.Status_message) utilities.Order_distribution_message {
-	builder_input := redistribute_obstructed_service_orders(statuses)
-	assigner_input := build_assigner_input(builder_input)
+	unobstructed_statuses := redistribute_obstructed_service_orders(statuses)
+	assigner_input := build_assigner_input(unobstructed_statuses)
 	assigner_output, err := run_hall_assigner(assigner_input)
 	if err != nil {
 		fmt.Println(err)

@@ -1,5 +1,7 @@
 package controller_modes
 
+//Controller modes for the controller state machine
+
 import (
 	"fmt"
 	"main/controller/controller_tools"
@@ -11,7 +13,6 @@ import (
 )
 
 func base_controller(
-	just_booted *bool,
 	status_message *utilities.Status_message,
 	current_elevator *elevator.Elevator,
 	controller_id *int,
@@ -69,8 +70,6 @@ func base_controller(
 func Slave(
 	prev_odm *utilities.Order_distribution_message,
 	connected_elevators_status *map[int]utilities.Status_message,
-	has_ever_connected *bool,
-	just_booted *bool,
 	state *utilities.State,
 	current_elevator *elevator.Elevator,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
@@ -89,17 +88,13 @@ func Slave(
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 
-	go base_controller(just_booted, &status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
+	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
 	for {
 		if !net.Connection {
 			*state = utilities.State_disconnected
 			kill_base_ctrl_chan <- true
 			fmt.Println("Switching to disconnected mode")
 			return
-		}
-		if !*has_ever_connected {
-			*has_ever_connected = true
-			fmt.Println("Confirmed connection")
 		}
 		if net.Master {
 			*state = utilities.State_master
@@ -124,7 +119,6 @@ func Slave(
 func Master(
 	prev_odm *utilities.Order_distribution_message,
 	connected_elevators_status *map[int]utilities.Status_message,
-	just_booted *bool,
 	state *utilities.State,
 	current_elevator *elevator.Elevator,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
@@ -144,7 +138,7 @@ func Master(
 	var status_message = utilities.Status_message{Controller_id: net.Ctrl_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 		Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: current_elevator.Requests}
 
-	go base_controller(just_booted, &status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
+	go base_controller(&status_message, current_elevator, &net.Ctrl_id, elev_to_ctrl_chan, elev_to_ctrl_button_chan, ctrl_to_elev_chan, ctrl_to_elev_cab_chan, ctrl_to_network_chan, network_to_ctrl_chan, kill_base_ctrl_chan)
 
 	for {
 		select {
@@ -253,8 +247,6 @@ func Master(
 }
 
 func Disconnected(
-	has_ever_connected *bool,
-	just_booted *bool,
 	state *utilities.State,
 	current_elevator *elevator.Elevator,
 	elev_to_ctrl_chan <-chan elevator.Elevator,
@@ -283,9 +275,6 @@ func Disconnected(
 			}
 		default:
 			if net.Connection {
-				if *has_ever_connected {
-					*just_booted = false
-				}
 				*state = utilities.State_slave
 				fmt.Println("Switching to slave mode")
 				return

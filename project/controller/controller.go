@@ -28,11 +28,11 @@ import (
 var (
 	state       				utilities.State = utilities.State_slave
 	prev_odm 					utilities.Order_distribution_message
-	node_statuses_chan			= make(chan utilities.Status_message, utilities.N_ELEVS)
 	current_elevator			elevator.Elevator = elevator.Uninitialised_elevator()
 	net							network.Network
 	connected_elevators_status	= make(map[int]utilities.Status_message)
-
+	
+	all_node_statuses_chan			= make(chan utilities.Status_message, utilities.N_ELEVS)
 	node_status_chan			= make(chan utilities.Status_message, 1)
 	service_orders_chan			= make(chan utilities.Order_distribution_message, 1)
 	send_orders_chan			= make(chan utilities.Order_distribution_message, 1)
@@ -45,9 +45,8 @@ func Run_controller(
 	hall_orders_chan chan<- utilities.Controller_to_elevator_message,
 	cab_orders_chan chan<- elevio.ButtonEvent,
 	) {
-	go network.Network_run(&net, service_orders_chan, send_orders_chan, node_status_chan, node_statuses_chan, dropped_peer_chan)
+	go network.Network_run(&net, service_orders_chan, send_orders_chan, node_status_chan, all_node_statuses_chan, dropped_peer_chan)
 	controller_state_machine(elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, &net)
-
 }
 
 func controller_state_machine(
@@ -62,9 +61,9 @@ func controller_state_machine(
 	for {
 		switch state {
 		case utilities.State_slave:
-			controller_modes.Slave(&prev_odm, &connected_elevators_status, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, node_statuses_chan, dropped_peer_chan, net)
+			controller_modes.Slave(&prev_odm, &connected_elevators_status, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, all_node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_master:
-			controller_modes.Master(&prev_odm, &connected_elevators_status, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, service_orders_chan, node_statuses_chan, dropped_peer_chan, net)
+			controller_modes.Master(&prev_odm, &connected_elevators_status, &state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, node_status_chan, send_orders_chan, service_orders_chan, all_node_statuses_chan, dropped_peer_chan, net)
 		case utilities.State_disconnected:
 			controller_modes.Disconnected(&state, &current_elevator, elevator_status_chan, button_event_chan, hall_orders_chan, cab_orders_chan, net)
 		}

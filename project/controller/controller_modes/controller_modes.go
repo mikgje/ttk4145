@@ -42,7 +42,7 @@ func base_controller(
 			augmented_requests = controller_tools.Augment_request_array(current_elevator.Requests, new_order)
 			*status_message = utilities.Status_message{Controller_id: *controller_id, Behaviour: elevator.EB_to_string[current_elevator.Behaviour],
 				Floor: current_elevator.Floor, Direction: elevator.Dirn_to_string[current_elevator.Dirn], Node_orders: augmented_requests}
-		case msg := <-send_orders_chan /*The channel that supplies the ODM*/ :
+		case msg := <-send_orders_chan:
 			new_orders := controller_tools.Extract_orderline(*controller_id, msg)
 
 			for floor := 0; floor < utilities.N_FLOORS; floor++ {
@@ -73,7 +73,7 @@ func Slave(
 	cab_orders_chan chan<- elevio.ButtonEvent,
 	node_status_chan chan<- utilities.Status_message,
 	send_orders_chan <-chan utilities.Order_distribution_message,
-	node_statuses_chan <-chan utilities.Status_message,
+	all_node_statuses_chan <-chan utilities.Status_message,
 	dropped_peer_chan <-chan utilities.Status_message,
 	net *network.Network,
 ) {
@@ -99,7 +99,7 @@ func Slave(
 		}
 
 		select {
-		case msg := <-node_statuses_chan:
+		case msg := <-all_node_statuses_chan:
 			if msg.Controller_id != utilities.Default_id {
 				(*connected_elevators_status)[msg.Controller_id] = msg
 			}
@@ -124,7 +124,7 @@ func Master(
 	node_status_chan chan<- utilities.Status_message,
 	send_orders_chan <-chan utilities.Order_distribution_message,
 	service_orders_chan chan<- utilities.Order_distribution_message,
-	node_statuses_chan <-chan utilities.Status_message,
+	all_node_statuses_chan <-chan utilities.Status_message,
 	dropped_peer_chan <-chan utilities.Status_message,
 	net *network.Network,
 ) {
@@ -135,15 +135,16 @@ func Master(
 
 	for {
 		select {
-		case msg := <-node_statuses_chan:
+		case msg := <-all_node_statuses_chan:
 
 			if msg.Controller_id != utilities.Default_id {
 				(*connected_elevators_status)[msg.Controller_id] = msg
 			}
+			// Drain all statuses from the network to have updated information on all nodes before creating new odm.
 			outer_loop:
-			for i := 0; i < utilities.N_ELEVS; i++ {
+			for  {
 				select {
-				case msg := <-node_statuses_chan:
+				case msg := <-all_node_statuses_chan:
 					if msg.Controller_id != utilities.Default_id {
 						(*connected_elevators_status)[msg.Controller_id] = msg
 					}
@@ -177,7 +178,7 @@ func Master(
 				for i := 0; i < 50; i++ {
 					service_orders_chan <- new_odm
 				}
-				controller_tools.Flush_status_messages(node_statuses_chan)
+				controller_tools.Flush_status_messages(all_node_statuses_chan)
 			}
 
 		case msg := <-dropped_peer_chan:
@@ -186,7 +187,7 @@ func Master(
 			disconnected_peer_status.Controller_id = net.N_nodes
 			disconnected_peer_status.Behaviour = elevator.EB_to_string[elevator.EB_Disconnected]
 			(*connected_elevators_status)[net.N_nodes] = disconnected_peer_status
-			controller_tools.Flush_status_messages(node_statuses_chan)
+			controller_tools.Flush_status_messages(all_node_statuses_chan)
 		default:
 		}
 
